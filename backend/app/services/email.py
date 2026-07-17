@@ -3,6 +3,8 @@ import logging
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.utils import make_msgid, formatdate
+import re
 from typing import Optional
 
 from app.core.config import settings
@@ -16,6 +18,17 @@ from app.services.i18n_texts import (
 logger = logging.getLogger(__name__)
 
 
+def _html_to_text(html: str) -> str:
+    """Text-версия из HTML для multipart/alternative (важно для доставляемости)."""
+    text = re.sub(r"(?is)<(script|style).*?</\1>", "", html)
+    text = re.sub(r"(?i)<br\s*/?>", "\n", text)
+    text = re.sub(r"(?i)</(p|div|tr|h[1-6]|table)>", "\n", text)
+    text = re.sub(r"<[^>]+>", "", text)
+    text = re.sub(r"[ \t]+", " ", text)
+    text = re.sub(r"\n\s*\n\s*\n+", "\n\n", text)
+    return text.strip()
+
+
 def _send_email(to: str, subject: str, html_body: str) -> bool:
     """Отправляет email через SMTP. Возвращает True при успехе."""
     if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
@@ -25,8 +38,12 @@ def _send_email(to: str, subject: str, html_body: str) -> bool:
     try:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
-        msg["From"] = settings.SMTP_FROM
+        msg["From"] = f"HireLens <{settings.SMTP_FROM}>"
         msg["To"] = to
+        msg["Reply-To"] = settings.SMTP_FROM
+        msg["Message-ID"] = make_msgid(domain=settings.SMTP_FROM.split("@")[-1])
+        msg["Date"] = formatdate(localtime=True)
+        msg.attach(MIMEText(_html_to_text(html_body), "plain", "utf-8"))
         msg.attach(MIMEText(html_body, "html", "utf-8"))
 
         with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as server:
