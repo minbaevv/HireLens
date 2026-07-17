@@ -27,7 +27,7 @@ import Layout from './components/Layout'
 
 function PrivateRoute({ children }) {
   const { token } = useAuth()
-  return token ? children : <Navigate to="/login" replace />
+  return token ? children : <Navigate to="/landing" replace />
 }
 
 export default function App() {
