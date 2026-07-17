@@ -160,14 +160,21 @@ def notify_candidate_status(candidate_name: str, candidate_email: str,
 
 def send_verification_code(to: str, code: str) -> bool:
     """Отправляет 6-значный код подтверждения email при регистрации (SEC-11)."""
-    subject = "Код подтверждения — HireLens"
+    subject = "Ваш код подтверждения регистрации в HireLens"
     html = f"""
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #4F46E5;">Подтверждение email</h2>
-        <p>Ваш код подтверждения регистрации в HireLens:</p>
-        <p style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #4F46E5;">{code}</p>
-        <p style="color: #6B7280;">Код действует 15 минут. Если вы не регистрировались — просто проигнорируйте это письмо.</p>
-        <p style="color: #9CA3AF; font-size: 12px; margin-top: 30px;">HireLens</p>
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #374151;">
+        <h2 style="color: #4F46E5;">Подтверждение адреса электронной почты</h2>
+        <p>Здравствуйте!</p>
+        <p>Вы начали регистрацию в <strong>HireLens</strong> — платформе автоматического AI-скрининга и интервьюирования кандидатов. Чтобы подтвердить, что этот адрес принадлежит вам, введите код подтверждения на странице регистрации:</p>
+        <p style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #4F46E5; margin: 24px 0;">{code}</p>
+        <p>Код действует <strong>15 минут</strong>. После подтверждения вы получите доступ к личному кабинету, где сможете создавать вакансии, приглашать кандидатов и получать результаты AI-интервью.</p>
+        <p style="color: #6B7280;">Если вы не регистрировались в HireLens — просто проигнорируйте это письмо. Никаких действий не требуется, и ваш адрес не будет использован.</p>
+        <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0;">
+        <p style="color: #9CA3AF; font-size: 12px; line-height: 1.6;">
+            HireLens — автоматизация найма с помощью искусственного интеллекта.<br>
+            Это письмо отправлено автоматически в ответ на регистрацию, отвечать на него не нужно.<br>
+            Сайт: https://gethirelens.tech
+        </p>
     </div>
     """
     sent = _send_email(to, subject, html)
