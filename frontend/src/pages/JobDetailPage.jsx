@@ -64,7 +64,7 @@ export default function JobDetailPage() {
 
   const applyUrl = `${window.location.origin}/apply/${job.apply_token}`
   const tgBot = company?.telegram_candidate_bot_username
-  const tgUrl = tgBot ? `{{https://t.me/${tgBot}}}?start=${job.apply_token}` : null
+  const tgUrl = tgBot ? `https://t.me/${tgBot}?start=${job.apply_token}` : null
 
   return (
     <div className="p-8 max-w-5xl mx-auto">
