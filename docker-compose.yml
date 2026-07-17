@@ -1,0 +1,45 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ai_hr_db
+      POSTGRES_USER: ai_hr_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-strongpassword}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ai_hr_user -d ai_hr_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://ai_hr_user:${POSTGRES_PASSWORD:-strongpassword}@db:5432/ai_hr_db
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8010:8000"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:8081:80"
+
+volumes:
+  postgres_data:

@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.env
+*.db
+.venv/
+venv/
+.pytest_cache/
+node_modules/
+dist/
+build/
+.DS_Store
+.idea/
+ngrok.exe
+test.db
+uploads/

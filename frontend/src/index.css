@@ -1,0 +1,142 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Семантические токены дизайн-системы (D1).
+   Значения — RGB-каналы через пробел, чтобы работал формат
+   rgb(var(--color-..) / <alpha-value>) из tailwind.config.js. */
+@layer base {
+  :root {
+    --color-canvas: 249 250 251;        /* gray-50  */
+    --color-surface: 255 255 255;       /* white    */
+    --color-surface-muted: 243 244 246; /* gray-100 */
+    --color-line: 229 231 235;          /* gray-200 */
+    --color-content: 17 24 39;          /* gray-900 */
+    --color-muted: 107 114 128;         /* gray-500 */
+    --color-faint: 156 163 175;         /* gray-400 */
+  }
+
+  .dark {
+    --color-canvas: 2 6 23;             /* slate-950 */
+    --color-surface: 15 23 42;          /* slate-900 */
+    --color-surface-muted: 30 41 59;    /* slate-800 */
+    --color-line: 51 65 85;             /* slate-700 */
+    --color-content: 241 245 249;       /* slate-100 */
+    --color-muted: 148 163 184;         /* slate-400 */
+    --color-faint: 100 116 139;         /* slate-500 */
+  }
+
+  body {
+    @apply bg-canvas text-content antialiased;
+  }
+
+  /* Доступность: уважаем системную настройку «уменьшить движение» —
+     отключаем анимации/переходы для пользователей с вестибулярными расстройствами. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 active:bg-brand-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 px-4 py-2 bg-surface text-content text-sm font-medium rounded-lg border border-line hover:bg-surface-muted active:bg-surface-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas;
+  }
+  .btn-danger {
+    @apply inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas;
+  }
+  .input {
+    @apply w-full px-3 py-2 text-sm border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-shadow bg-surface text-content placeholder:text-faint;
+  }
+  .card {
+    @apply bg-surface rounded-xl border border-line shadow-sm;
+  }
+  .badge-hire {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300;
+  }
+  .badge-maybe {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-500/15 dark:text-yellow-300;
+  }
+  .badge-reject {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300;
+  }
+  .badge-status {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  /* Карточка с hover-подъёмом — для фич, тарифов, метрик */
+  .card-lift {
+    @apply transition-all duration-300 ease-out hover:-translate-y-1.5 hover:shadow-xl hover:shadow-brand-500/10 hover:border-brand-500/40;
+  }
+
+  /* Мягкое свечение за героем/CTA */
+  .glow-brand {
+    background: radial-gradient(ellipse 60% 50% at 50% 40%, rgb(59 130 246 / 0.14), transparent 70%);
+  }
+}
+
+/* ─── Анимации (D1.6) ─────────────────────────────────────────── */
+@layer utilities {
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes float-slow {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-10px); }
+  }
+  @keyframes bar-grow {
+    from { transform: scaleY(0); }
+    to   { transform: scaleY(1); }
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.5; transform: scale(0.85); }
+  }
+  @keyframes marquee-x {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+
+  .animate-fade-up   { animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .animate-fade-in   { animation: fade-in 0.9s ease-out both; }
+  .animate-float     { animation: float-slow 6s ease-in-out infinite; }
+  .animate-bar-grow  { animation: bar-grow 0.9s cubic-bezier(0.16, 1, 0.3, 1) both; transform-origin: bottom; }
+  .animate-pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
+
+  /* Каскадные задержки для списков карточек */
+  .delay-0   { animation-delay: 0ms; }
+  .delay-100 { animation-delay: 100ms; }
+  .delay-200 { animation-delay: 200ms; }
+  .delay-300 { animation-delay: 300ms; }
+  .delay-400 { animation-delay: 400ms; }
+  .delay-500 { animation-delay: 500ms; }
+
+  /* Scroll-reveal: элемент появляется при входе во вьюпорт (IntersectionObserver вешает .is-visible) */
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; transition: none; }
+  }
+}
