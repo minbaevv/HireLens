@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import api from '../api/client'
 import { Plus, Copy, Check, Trash2, ToggleLeft, ToggleRight, Briefcase } from 'lucide-react'
 import Spinner from '../components/Spinner'
@@ -118,6 +119,7 @@ function JobModal({ job, onClose, onSaved }) {
 
 export default function JobsPage() {
   const { t } = useT()
+  const navigate = useNavigate()
   const [jobs, setJobs] = useState([])
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState(null)
@@ -175,7 +177,7 @@ export default function JobsPage() {
           {jobs.map(job => (
             <div key={job.id} className="card p-5">
               <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate('/jobs/' + job.id)}>
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="font-semibold text-content">{job.title}</h3>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
@@ -187,7 +189,7 @@ export default function JobsPage() {
                     <code className="text-xs bg-surface-muted border border-line px-2 py-1 rounded text-muted truncate max-w-xs">
                       {job.apply_link}
                     </code>
-                    <button onClick={() => copyLink(job.apply_link)}
+                    <button onClick={(e) => { e.stopPropagation(); copyLink(job.apply_link) }}
                       className="p-1.5 rounded-lg hover:bg-surface-muted text-faint hover:text-muted transition-colors">
                       {copied === job.apply_link ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
                     </button>
