@@ -67,7 +67,11 @@ def _register_cyrillic_font():
     for path in font_paths:
         if os.path.exists(path):
             pdfmetrics.registerFont(TTFont("CyrillicFont", path))
-            pdfmetrics.registerFont(TTFont("CyrillicFont-Bold", path))
+            bold_path = path.replace("DejaVuSans.ttf", "DejaVuSans-Bold.ttf")
+            if os.path.exists(bold_path):
+                pdfmetrics.registerFont(TTFont("CyrillicFont-Bold", bold_path))
+            else:
+                pdfmetrics.registerFont(TTFont("CyrillicFont-Bold", path))
             return "CyrillicFont"
 
     # Fallback: скачиваем DejaVuSans если нет локально
@@ -101,7 +105,7 @@ def generate_candidate_pdf(candidate, job_title: str, messages: list = None) -> 
 
     # Регистрируем кириллический шрифт
     font_name = _register_cyrillic_font() or "Helvetica"
-    font_bold = font_name if font_name != "Helvetica" else "Helvetica-Bold"
+    font_bold = (font_name + "-Bold") if font_name != "Helvetica" else "Helvetica-Bold"
 
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
