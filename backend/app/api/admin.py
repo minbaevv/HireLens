@@ -102,7 +102,12 @@ def list_companies(
     _: Company = Depends(require_superadmin),
 ):
     """Список всех компаний с тарифом, сроком и числом рефералов."""
-    companies = db.query(Company).order_by(Company.created_at.desc()).all()
+    companies = (
+        db.query(Company)
+        .filter(Company.is_verified.isnot(False))  # скрываем неподтверждённые (призрачные) аккаунты
+        .order_by(Company.created_at.desc())
+        .all()
+    )
     return [_row(db, c) for c in companies]
 
 
