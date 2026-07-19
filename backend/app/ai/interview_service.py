@@ -523,7 +523,8 @@ def _run_scoring(interview: Interview, db: Session) -> None:
         # (тоже LLM-вызов) больше не идут друг за другом, а стартуют одновременно
         # (asyncio.gather + asyncio.to_thread). Итог: ~8–10 сек → ~3–4 сек.
         def _do_scoring():
-            return _call_groq([], scoring_prompt, temperature=settings.TEMPERATURE_SCORING)
+            from app.ai.llm import call_llm
+            return call_llm([], scoring_prompt, temperature=settings.TEMPERATURE_SCORING, max_tokens=settings.SCORING_MAX_TOKENS)
 
         def _do_anticheat():
             from app.ai.anticheat_service import analyze_interview

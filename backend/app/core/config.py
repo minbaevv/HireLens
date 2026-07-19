@@ -38,6 +38,8 @@ class Settings:
     SCORING_TRANSCRIPT_MAX_CHARS: int = int(os.getenv("SCORING_TRANSCRIPT_MAX_CHARS", "6000"))
     # Минимум вопросов AI для достоверного скоринга
     SCORING_MIN_AI_QUESTIONS: int = int(os.getenv("SCORING_MIN_AI_QUESTIONS", "4"))
+    # Scoring response token limit (large Cyrillic JSON; 1024 truncated -> broken JSON)
+    SCORING_MAX_TOKENS: int = int(os.getenv("SCORING_MAX_TOKENS", "3000"))
     # Множитель confidence, если у кандидата нет резюме (1.0 = штраф отключён)
     SCORING_NO_RESUME_PENALTY: float = float(os.getenv("SCORING_NO_RESUME_PENALTY", "0.7"))
     # SEC-14: максимум интервью на одного кандидата (защита от cost-DoS)
