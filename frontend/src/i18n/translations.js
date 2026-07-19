@@ -6,6 +6,7 @@ export const translations = {
   ru: {
     'verify.title': 'Подтвердите email',
     'verify.subtitle': 'Мы отправили 6-значный код на',
+    'verify.spamHint': 'Не пришёл код? Проверьте папку «Спам» и отметьте письмо как «Не спам».',
     'verify.codeLabel': 'Код подтверждения',
     'verify.submit': 'Подтвердить',
     'verify.loading': 'Проверяем...',
@@ -531,6 +532,7 @@ export const translations = {
   ky: {
     'verify.title': 'Email тастыктаңыз',
     'verify.subtitle': 'Биз 6 орундуу кодду жөнөттүк',
+    'verify.spamHint': 'Код келген жокпу? «Спам» папкасын текшериңиз жана катты «Спам эмес» деп белгилеңиз.',
     'verify.codeLabel': 'Тастыктоо коду',
     'verify.submit': 'Тастыктоо',
     'verify.loading': 'Текшерилүүдө...',
@@ -1056,6 +1058,7 @@ export const translations = {
   en: {
     'verify.title': 'Verify your email',
     'verify.subtitle': 'We sent a 6-digit code to',
+    'verify.spamHint': 'No code? Check your Spam folder and mark the email as "Not spam".',
     'verify.codeLabel': 'Verification code',
     'verify.submit': 'Verify',
     'verify.loading': 'Checking...',

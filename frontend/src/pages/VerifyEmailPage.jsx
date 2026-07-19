@@ -56,9 +56,12 @@ export default function VerifyEmailPage() {
     <div className="min-h-screen flex items-center justify-center bg-surface px-4">
       <div className="card p-8 w-full max-w-md">
         <h1 className="text-2xl font-bold text-content mb-1">{t('verify.title')}</h1>
-        <p className="text-sm text-muted mb-6">
+        <p className="text-sm text-muted mb-3">
           {t('verify.subtitle')} <span className="font-medium text-content">{email}</span>
         </p>
+        <div className="mb-6 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 text-amber-700 dark:text-amber-300 text-sm px-3 py-2 rounded-lg">
+          {t('verify.spamHint')}
+        </div>
 
         {error && (
           <div className="mb-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 text-red-700 dark:text-red-300 text-sm px-3 py-2 rounded-lg">
