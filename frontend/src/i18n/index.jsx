@@ -24,10 +24,24 @@ function selectPlural(lang, n, forms) {
   return forms[Math.min(idx, forms.length - 1)] ?? forms[0]
 }
 
+// Автоопределение языка при первом заходе (нет сохранённого выбора). kk/kz → ky.
+function detectBrowserLang() {
+  const raws = (typeof navigator !== "undefined" && (navigator.languages?.length ? navigator.languages : [navigator.language])) || []
+  for (const raw of raws) {
+    const code = String(raw || '').toLowerCase()
+    const base = code.split('-')[0]
+    if (base === 'ru') return 'ru'
+    if (base === 'en') return 'en'
+    if (base === 'ky' || base === 'kk' || code.includes('kz')) return 'ky'
+  }
+  return DEFAULT_LANG
+}
+
 export function LanguageProvider({ children }) {
   const [lang, setLangState] = useState(() => {
     const saved = localStorage.getItem('lang')
-    return SUPPORTED_LANGS.includes(saved) ? saved : DEFAULT_LANG
+    if (SUPPORTED_LANGS.includes(saved)) return saved
+    return detectBrowserLang()
   })
 
   const setLang = (next) => {
