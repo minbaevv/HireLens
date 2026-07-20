@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Bot, Mic, BarChart3, Mail, FileDown, Kanban, Star, CheckCircle, Languages, ShieldCheck, Clock, Video } from 'lucide-react'
+import { Bot, Mic, BarChart3, Mail, FileDown, Kanban, Star, CheckCircle, Languages, ShieldCheck, Clock, Video, Sparkles, Gauge, Scale, Code2, CalendarClock, Rocket, Building2, Users, Briefcase } from 'lucide-react'
 import api from '../api/client'
 import { useT } from '../i18n'
 import Logo from '../components/Logo'
@@ -165,6 +165,29 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* How it works */}
+      <section className="max-w-6xl mx-auto px-4 py-20">
+        <h2 className="text-3xl font-bold text-center text-content mb-3 text-balance">{t('landing.howTitle')}</h2>
+        <p className="text-center text-muted mb-12 text-pretty">{t('landing.howSubtitle')}</p>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {[
+            { Icon: Briefcase, title: t('landing.how1Title'), desc: t('landing.how1Desc') },
+            { Icon: Mic, title: t('landing.how2Title'), desc: t('landing.how2Desc') },
+            { Icon: Gauge, title: t('landing.how3Title'), desc: t('landing.how3Desc') },
+            { Icon: CheckCircle, title: t('landing.how4Title'), desc: t('landing.how4Desc') },
+          ].map(({ Icon, title, desc }, i) => (
+            <div key={i} className="relative p-6 border border-line rounded-2xl bg-surface card-lift">
+              <div className="absolute -top-3 -left-3 w-8 h-8 rounded-full bg-brand-600 text-white text-sm font-bold flex items-center justify-center shadow-lg">{i + 1}</div>
+              <div className="w-11 h-11 bg-brand-50 dark:bg-brand-500/15 rounded-xl flex items-center justify-center mb-4">
+                <Icon className="w-5 h-5 text-brand-600 dark:text-brand-300" />
+              </div>
+              <h3 className="font-semibold text-content mb-2">{title}</h3>
+              <p className="text-muted text-sm">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Features */}
       <section id="features" ref={featuresRef} className="reveal max-w-6xl mx-auto px-4 py-20">
         <h2 className="text-3xl font-bold text-center text-content mb-12 text-balance">{t('landing.featuresTitle')}</h2>
@@ -181,6 +204,55 @@ export default function LandingPage() {
               </div>
             )
           })}
+        </div>
+      </section>
+
+      {/* Capabilities — detailed */}
+      <section className="bg-canvas border-y border-line py-20">
+        <div className="max-w-6xl mx-auto px-4">
+          <h2 className="text-3xl font-bold text-center text-content mb-3 text-balance">{t('landing.capTitle')}</h2>
+          <p className="text-center text-muted mb-12 text-pretty">{t('landing.capSubtitle')}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              { Icon: Sparkles, title: t('landing.capAdaptiveTitle'), desc: t('landing.capAdaptiveDesc') },
+              { Icon: Gauge, title: t('landing.capScoringTitle'), desc: t('landing.capScoringDesc') },
+              { Icon: ShieldCheck, title: t('landing.capAntiCheatTitle'), desc: t('landing.capAntiCheatDesc') },
+              { Icon: Scale, title: t('landing.capBiasTitle'), desc: t('landing.capBiasDesc') },
+              { Icon: Video, title: t('landing.capVideoTitle'), desc: t('landing.capVideoDesc') },
+              { Icon: Code2, title: t('landing.capCodingTitle'), desc: t('landing.capCodingDesc') },
+              { Icon: CalendarClock, title: t('landing.capSchedulingTitle'), desc: t('landing.capSchedulingDesc') },
+              { Icon: Bot, title: t('landing.capCopilotTitle'), desc: t('landing.capCopilotDesc') },
+            ].map(({ Icon, title, desc }, i) => (
+              <div key={i} className="p-6 border border-line rounded-2xl bg-surface card-lift">
+                <div className="w-11 h-11 bg-brand-50 dark:bg-brand-500/15 rounded-xl flex items-center justify-center mb-4">
+                  <Icon className="w-5 h-5 text-brand-600 dark:text-brand-300" />
+                </div>
+                <h3 className="font-semibold text-content mb-2">{title}</h3>
+                <p className="text-muted text-sm">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* For whom — company sizes */}
+      <section className="max-w-6xl mx-auto px-4 py-20">
+        <h2 className="text-3xl font-bold text-center text-content mb-3 text-balance">{t('landing.segTitle')}</h2>
+        <p className="text-center text-muted mb-12 text-pretty">{t('landing.segSubtitle')}</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            { Icon: Rocket, title: t('landing.segSmallTitle'), desc: t('landing.segSmallDesc') },
+            { Icon: Building2, title: t('landing.segMidTitle'), desc: t('landing.segMidDesc') },
+            { Icon: Users, title: t('landing.segLargeTitle'), desc: t('landing.segLargeDesc') },
+          ].map(({ Icon, title, desc }, i) => (
+            <div key={i} className="p-8 border border-line rounded-2xl bg-surface card-lift text-center">
+              <div className="inline-flex p-3 rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300 mb-4">
+                <Icon className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-bold text-content mb-2">{title}</h3>
+              <p className="text-muted text-sm">{desc}</p>
+            </div>
+          ))}
         </div>
       </section>
 
