@@ -12,7 +12,23 @@ const LANG_META = {
 export default function LanguageSwitcher() {
   const { lang, setLang } = useT()
   const [open, setOpen] = useState(false)
+  const [dropUp, setDropUp] = useState(false)
   const ref = useRef(null)
+  const btnRef = useRef(null)
+
+  // Умное позиционирование: если снизу мало места (как внизу сайдбара) — открываем вверх.
+  const toggle = () => {
+    setOpen((v) => {
+      const next = !v
+      if (next && btnRef.current) {
+        const rect = btnRef.current.getBoundingClientRect()
+        const spaceBelow = window.innerHeight - rect.bottom
+        const spaceAbove = rect.top
+        setDropUp(spaceBelow < 200 && spaceAbove > spaceBelow)
+      }
+      return next
+    })
+  }
 
   useEffect(() => {
     if (!open) return
@@ -35,8 +51,9 @@ export default function LanguageSwitcher() {
   return (
     <div className="relative" ref={ref}>
       <button
+        ref={btnRef}
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggle}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label="Выбор языка"
@@ -56,7 +73,7 @@ export default function LanguageSwitcher() {
       {open && (
         <ul
           role="listbox"
-          className="absolute right-0 z-50 mt-1 w-40 overflow-hidden rounded-lg border border-line bg-surface shadow-lg animate-fade-in"
+          className={`absolute right-0 z-50 w-40 overflow-hidden rounded-lg border border-line bg-surface shadow-lg animate-fade-in ${dropUp ? 'bottom-full mb-1' : 'mt-1'}`}
         >
           {SUPPORTED_LANGS.map((code) => {
             const meta = LANG_META[code] || { label: code, native: code }

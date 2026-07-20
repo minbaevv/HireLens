@@ -6,7 +6,7 @@ import StatusBadge from '../components/StatusBadge'
 import RecommendationBadge from '../components/RecommendationBadge'
 import Spinner from '../components/Spinner'
 import { useT } from '../i18n'
-import { ArrowLeft, CheckCircle, XCircle, FileText, Download, AlertTriangle, ClipboardCheck } from 'lucide-react'
+import { ArrowLeft, CheckCircle, XCircle, FileText, Download, AlertTriangle, ClipboardCheck, RefreshCw } from 'lucide-react'
 import SchedulingCard from '../components/SchedulingCard'
 import CodingCard from '../components/CodingCard'
 
@@ -24,6 +24,7 @@ export default function CandidateDetailPage() {
   const [notes, setNotes] = useState('')
   const [savingDecision, setSavingDecision] = useState(false)
   const [tab, setTab] = useState('scoring')
+  const [rescoring, setRescoring] = useState(false)
 
   async function load() {
     const { data } = await api.get(`/candidates/${id}`)
@@ -55,6 +56,22 @@ export default function CandidateDetailPage() {
       await load()
     } finally {
       setSavingDecision(false)
+    }
+  }
+
+  async function rescore() {
+    setRescoring(true)
+    try {
+      await api.post(`/candidates/${id}/rescore`)
+      // Скоринг идёт в фоне (~10-30с) - поллим результат.
+      for (let i = 0; i < 8; i++) {
+        await new Promise((r) => setTimeout(r, 5000))
+        const { data } = await api.get(`/candidates/${id}`)
+        if (data.score != null && !data.requires_manual_review) break
+      }
+      await load()
+    } finally {
+      setRescoring(false)
     }
   }
 
@@ -94,12 +111,19 @@ export default function CandidateDetailPage() {
       </button>
 
       {candidate.requires_manual_review && (
-        <div className="mb-4 p-4 rounded-xl bg-amber-50 border border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/30 flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">{t('candidateDetail.reviewBanner')}</p>
-            <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">{t('candidateDetail.reviewBannerHint')}</p>
+        <div className="mb-4 p-4 rounded-xl bg-amber-50 border border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/30">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">{t('candidateDetail.reviewBanner')}</p>
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">{t('candidateDetail.reviewBannerHint')}</p>
+            </div>
           </div>
+          <button onClick={rescore} disabled={rescoring}
+            className="btn-secondary mt-3 border-amber-300 dark:border-amber-500/40 text-amber-800 dark:text-amber-300">
+            <RefreshCw className={`w-4 h-4 ${rescoring ? 'animate-spin' : ''}`} />
+            {rescoring ? t('candidateDetail.rescoreRunning') : t('candidateDetail.rescore')}
+          </button>
         </div>
       )}
 

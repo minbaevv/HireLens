@@ -4,7 +4,7 @@ import logging
 from datetime import UTC, datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
 from sqlalchemy.orm import Session
 
 from pydantic import BaseModel
@@ -474,6 +474,59 @@ def get_candidate(
             detail="Кандидат не найден",
         )
     return CandidateOut.model_validate(candidate)
+
+
+@hr_router.post(
+    "/{candidate_id}/rescore",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Перескорить кандидата (повторный AI-скоринг)",
+)
+def rescore_candidate(
+    candidate_id: int,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    actor: CurrentActor = Depends(require_write_access),
+):
+    """Повторно запускает AI-скоринг по завершённому интервью кандидата.
+
+    Нужно, если предыдущий скоринг завершился сбоем (кандидат помечен для
+    ручной проверки). Скоринг выполняется в фоне; результат через 10-30 секунд.
+    """
+    candidate = db.query(Candidate).join(Job).filter(
+        Candidate.id == candidate_id,
+        Job.company_id == actor.company.id,
+    ).first()
+    if not candidate:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Кандидат не найден")
+
+    interview = (
+        db.query(Interview)
+        .filter(Interview.candidate_id == candidate_id)
+        .order_by(Interview.id.desc())
+        .first()
+    )
+    if not interview:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="У кандидата нет интервью для скоринга",
+        )
+
+    from app.ai.interview_service import _run_scoring_task
+
+    background_tasks.add_task(_run_scoring_task, interview.id)
+    logger.info(
+        f"Rescore: candidate #{candidate_id}, interview #{interview.id} - manual"
+    )
+    record_audit(
+        db,
+        company_id=actor.company.id,
+        action="candidate.rescore",
+        entity_type="candidate",
+        entity_id=candidate.id,
+        detail={"interview_id": interview.id},
+        **actor_fields(actor),
+    )
+    return {"status": "scoring_started", "interview_id": interview.id}
 
 
 @hr_router.get(
