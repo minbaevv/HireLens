@@ -12,19 +12,28 @@ const LANG_META = {
 export default function LanguageSwitcher() {
   const { lang, setLang } = useT()
   const [open, setOpen] = useState(false)
-  const [dropUp, setDropUp] = useState(false)
+  const [coords, setCoords] = useState(null)
   const ref = useRef(null)
   const btnRef = useRef(null)
 
-  // Умное позиционирование: если снизу мало места (как внизу сайдбара) — открываем вверх.
+  const MENU_W = 176 // w-44
+
+  // Позиционируем меню через position: fixed по координатам кнопки —
+  // так список не обрезается контейнером сайдбара и всегда виден целиком.
   const toggle = () => {
     setOpen((v) => {
       const next = !v
       if (next && btnRef.current) {
         const rect = btnRef.current.getBoundingClientRect()
         const spaceBelow = window.innerHeight - rect.bottom
-        const spaceAbove = rect.top
-        setDropUp(spaceBelow < 200 && spaceAbove > spaceBelow)
+        const dropUp = spaceBelow < 200
+        // сдвигаем вправо от кнопки, но не даём вылезти за правый край экрана
+        const left = Math.min(rect.left, window.innerWidth - MENU_W - 8)
+        setCoords(
+          dropUp
+            ? { left, bottom: window.innerHeight - rect.top + 6 }
+            : { left, top: rect.bottom + 6 }
+        )
       }
       return next
     })
@@ -70,10 +79,17 @@ export default function LanguageSwitcher() {
         </svg>
       </button>
 
-      {open && (
+      {open && coords && (
         <ul
           role="listbox"
-          className={`absolute right-0 z-50 w-40 overflow-hidden rounded-lg border border-line bg-surface shadow-lg animate-fade-in ${dropUp ? 'bottom-full mb-1' : 'mt-1'}`}
+          style={{
+            position: 'fixed',
+            left: coords.left,
+            top: coords.top,
+            bottom: coords.bottom,
+            width: MENU_W,
+          }}
+          className="z-[9999] overflow-hidden rounded-lg border border-line bg-surface shadow-xl animate-fade-in"
         >
           {SUPPORTED_LANGS.map((code) => {
             const meta = LANG_META[code] || { label: code, native: code }
