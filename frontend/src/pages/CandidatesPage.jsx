@@ -6,6 +6,7 @@ import StatusBadge from '../components/StatusBadge'
 import RecommendationBadge from '../components/RecommendationBadge'
 import { fmtDate } from '../utils/datetime'
 import Spinner from '../components/Spinner'
+import { SkeletonRows } from '../components/Skeleton'
 import { useT } from '../i18n'
 import { Users, Search, Download, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react'
 
@@ -107,7 +108,7 @@ export default function CandidatesPage() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-16"><Spinner size="lg" /></div>
+        <SkeletonRows rows={6} />
       ) : data.items.length === 0 ? (
         <div className="card py-16 text-center">
           <Users className="w-12 h-12 mx-auto text-faint mb-4" />

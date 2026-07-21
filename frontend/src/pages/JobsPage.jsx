@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import api from '../api/client'
 import { Plus, Copy, Check, Trash2, ToggleLeft, ToggleRight, Briefcase } from 'lucide-react'
-import Spinner from '../components/Spinner'
+import { SkeletonList } from '../components/Skeleton'
 import { useT } from '../i18n'
 
 const WEIGHT_PROFILES = {
@@ -120,6 +120,7 @@ function JobModal({ job, onClose, onSaved }) {
 export default function JobsPage() {
   const { t } = useT()
   const navigate = useNavigate()
+  const location = useLocation()
   const [jobs, setJobs] = useState([])
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState(null)
@@ -132,6 +133,10 @@ export default function JobsPage() {
   }
 
   useEffect(() => { load() }, [])
+
+  useEffect(() => {
+    if (new URLSearchParams(location.search).get('new') === '1') setModal('create')
+  }, [location.search])
 
   async function deleteJob(id) {
     if (!confirm(t('jobs.confirmDelete'))) return
@@ -150,7 +155,12 @@ export default function JobsPage() {
     setTimeout(() => setCopied(null), 2000)
   }
 
-  if (loading) return <div className="flex items-center justify-center h-full"><Spinner size="lg" /></div>
+  if (loading) return (
+    <div className="p-8">
+      <div className="h-8 w-40 rounded-md bg-surface-muted animate-pulse mb-8" />
+      <SkeletonList rows={4} />
+    </div>
+  )
 
   return (
     <div className="p-8">

@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { LayoutDashboard, Briefcase, Users, LogOut, LayoutGrid, BarChart2, Sparkles, UserCog, CreditCard, ShieldCheck, Plug, Scale, Code2 } from 'lucide-react'
+import { LayoutDashboard, Briefcase, Users, LogOut, LayoutGrid, BarChart2, Sparkles, UserCog, CreditCard, ShieldCheck, Plug, Scale, Code2, Search } from 'lucide-react'
 import api from '../api/client'
 import { useT } from '../i18n'
 import Logo from './Logo'
 import LanguageSwitcher from './LanguageSwitcher'
 import ThemeSwitcher from './ThemeSwitcher'
+import CommandPalette from './CommandPalette'
 
 export default function Layout() {
   const { company, logout } = useAuth()
@@ -39,6 +40,7 @@ export default function Layout() {
 
   return (
     <div className="flex h-screen bg-canvas">
+      <CommandPalette />
       <aside className="w-64 bg-surface border-r border-line flex flex-col">
         <div className="px-6 py-5 border-b border-line">
           <div className="flex items-center gap-3">
@@ -53,6 +55,14 @@ export default function Layout() {
         </div>
 
         <nav className="px-3 py-4 space-y-1">
+          <button
+            onClick={() => window.dispatchEvent(new Event('open-command-palette'))}
+            className="flex items-center gap-2 w-full px-3 py-2 mb-2 rounded-lg border border-line text-sm text-faint hover:bg-surface-muted hover:text-muted transition-colors"
+          >
+            <Search className="w-4 h-4" />
+            <span className="flex-1 text-left">{t('palette.open')}</span>
+            <kbd className="text-[10px] border border-line rounded px-1.5 py-0.5">Ctrl K</kbd>
+          </button>
           {navItems.map(({ to, icon: Icon, label, end }) => (
             <NavLink
               key={to} to={to} end={end}

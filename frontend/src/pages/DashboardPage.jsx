@@ -4,6 +4,8 @@ import api from '../api/client'
 import { Briefcase, Users, TrendingUp, CheckCircle, UserCheck, UserX, BarChart2, Target, AlertTriangle } from 'lucide-react'
 import Spinner from '../components/Spinner'
 import Onboarding from '../components/Onboarding'
+import OnboardingChecklist from '../components/OnboardingChecklist'
+import { Skeleton, SkeletonStats } from '../components/Skeleton'
 import { useT } from '../i18n'
 import { useTheme } from '../theme'
 import {
@@ -64,7 +66,15 @@ export default function DashboardPage() {
     setShowOnboarding(false)
   }
 
-  if (loading) return <div className="flex items-center justify-center h-full"><Spinner size="lg" /></div>
+  if (loading) return (
+    <div className="p-8">
+      <div className="mb-8 space-y-2">
+        <Skeleton className="h-7 w-48" />
+        <Skeleton className="h-4 w-64" />
+      </div>
+      <SkeletonStats count={4} />
+    </div>
+  )
   if (error)   return <div className="flex items-center justify-center h-full text-red-500">{error}</div>
 
   const stats = [
@@ -122,6 +132,8 @@ export default function DashboardPage() {
       </div>
 
       {/* Карточки статистики */}
+      <OnboardingChecklist stats={data} />
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {stats.map(({ label, value, sub, icon: Icon, color }) => (
           <div key={label} className="card p-5">
