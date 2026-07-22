@@ -6,6 +6,7 @@ import { useT } from '../i18n'
 import Logo from '../components/Logo'
 import LanguageSwitcher from '../components/LanguageSwitcher'
 import useReveal from '../hooks/useReveal'
+import AnimatedBackground from '../components/AnimatedBackground'
 
 const ICON_MAP = {
   '🤖': Bot, '🎤': Mic, '📊': BarChart3,
@@ -63,7 +64,9 @@ export default function LandingPage() {
   }, [data])
 
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="relative min-h-screen bg-transparent">
+      <AnimatedBackground />
+      <div className="relative z-10">
       {/* Nav */}
       <nav className="border-b border-line sticky top-0 bg-surface/90 backdrop-blur z-50">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -85,7 +88,6 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="relative max-w-6xl mx-auto px-4 pt-20 pb-16 text-center overflow-hidden">
-        <div className="absolute inset-0 glow-brand pointer-events-none" aria-hidden="true" />
         <div className="relative">
           <div className="inline-flex items-center gap-2 bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300 text-sm px-4 py-1.5 rounded-full mb-6 font-medium animate-fade-up delay-0">
             <span className="relative flex w-2 h-2">
@@ -334,6 +336,7 @@ export default function LandingPage() {
           <span>{data?.contact_email}</span>
         </div>
       </footer>
+      </div>
     </div>
   )
 }

@@ -9,6 +9,7 @@ import LanguageSwitcher from './LanguageSwitcher'
 import ThemeSwitcher from './ThemeSwitcher'
 import CommandPalette from './CommandPalette'
 import { usePageTransition } from '../motion'
+import AnimatedBackground from './AnimatedBackground'
 
 export default function Layout() {
   const { company, logout, isAdmin } = useAuth()
@@ -117,8 +118,9 @@ export default function Layout() {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-auto">
-        <div key={page.key} className={page.className}>
+      <main className="relative flex-1 overflow-auto">
+        <AnimatedBackground subtle />
+        <div key={page.key} className={`relative z-10 ${page.className}`}>
           <Outlet />
         </div>
       </main>
