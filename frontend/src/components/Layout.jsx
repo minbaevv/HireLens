@@ -10,7 +10,7 @@ import ThemeSwitcher from './ThemeSwitcher'
 import CommandPalette from './CommandPalette'
 
 export default function Layout() {
-  const { company, logout } = useAuth()
+  const { company, logout, isAdmin } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const { t } = useT()
@@ -27,8 +27,8 @@ export default function Layout() {
     { to: '/kanban',     icon: LayoutGrid,      label: t('nav.kanban') },
     { to: '/analytics',  icon: BarChart2,       label: t('nav.analytics') },
     { to: '/copilot',    icon: Sparkles,        label: t('nav.copilot') },
-    { to: '/team',       icon: UserCog,         label: t('nav.team') },
-    { to: '/integrations', icon: Plug,          label: t('nav.integrations') },
+    { to: '/team',       icon: UserCog,         label: t('nav.team'), adminOnly: true },
+    { to: '/integrations', icon: Plug,          label: t('nav.integrations'), adminOnly: true },
     { to: '/governance', icon: Scale,          label: t('nav.governance') },
     { to: '/coding',     icon: Code2,          label: t('nav.coding') },
     { to: '/billing',    icon: CreditCard,      label: t('nav.billing') },
@@ -63,7 +63,7 @@ export default function Layout() {
             <span className="flex-1 text-left">{t('palette.open')}</span>
             <kbd className="text-[10px] border border-line rounded px-1.5 py-0.5">Ctrl K</kbd>
           </button>
-          {navItems.map(({ to, icon: Icon, label, end }) => (
+          {navItems.filter((item) => !item.adminOnly || isAdmin).map(({ to, icon: Icon, label, end }) => (
             <NavLink
               key={to} to={to} end={end}
               className={({ isActive }) =>
@@ -89,6 +89,11 @@ export default function Layout() {
             <div className="px-3 py-1">
               <p className="text-xs font-semibold text-content truncate">{company.name}</p>
               <p className="text-xs text-faint truncate">{company.email}</p>
+              {company.role && (
+                <span className="inline-block mt-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-surface-muted text-muted">
+                  {company.role === 'admin' ? t('team.roleAdmin') : company.role === 'recruiter' ? t('team.roleRecruiter') : t('team.roleViewer')}
+                </span>
+              )}
             </div>
           )}
           <button

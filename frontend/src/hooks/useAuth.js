@@ -24,5 +24,9 @@ export function useAuth() {
     setCompany(null)
   }
 
-  return { token, company, login, logout }
+  const role = company?.role || null
+  const isOwner = !!company?.is_owner
+  const isAdmin = role === 'admin'
+  const canWrite = role === 'admin' || role === 'recruiter'
+  return { token, company, role, isOwner, isAdmin, canWrite, login, logout }
 }

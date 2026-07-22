@@ -12,7 +12,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_company
+from app.api.deps import CurrentActor, get_current_actor, get_current_company
 from app.core.config import settings
 from app.core.db import get_db
 from app.core.limiter import limiter
@@ -75,6 +75,8 @@ class CompanyOut(BaseModel):
     telegram_link_code: str | None = None
     telegram_bot_username: str | None = None
     telegram_candidate_bot_username: str | None = None
+    role: str = "admin"
+    is_owner: bool = True
 
     model_config = {"from_attributes": True}
 
@@ -277,6 +279,9 @@ def refresh(request: Request, body: RefreshRequest, db: Session = Depends(get_db
 
 
 @router.get("/me", response_model=CompanyOut)
-def me(current_company: Company = Depends(get_current_company)):
-    """Get current authenticated company."""
-    return CompanyOut.from_orm_company(current_company)
+def me(actor: CurrentActor = Depends(get_current_actor)):
+    """Get current authenticated company (вместе с ролью текущего пользователя)."""
+    out = CompanyOut.from_orm_company(actor.company)
+    out.role = actor.role.value
+    out.is_owner = actor.is_owner
+    return out

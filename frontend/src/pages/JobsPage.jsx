@@ -4,6 +4,7 @@ import api from '../api/client'
 import { Plus, Copy, Check, Trash2, ToggleLeft, ToggleRight, Briefcase } from 'lucide-react'
 import { SkeletonList } from '../components/Skeleton'
 import { useT } from '../i18n'
+import { useAuth } from '../hooks/useAuth'
 
 const WEIGHT_PROFILES = {
   technical: { technical: 45, experience: 30, soft: 15, motivation: 10 },
@@ -126,6 +127,8 @@ export default function JobsPage() {
   const [modal, setModal] = useState(null)
   const [copied, setCopied] = useState(null)
 
+  const { canWrite } = useAuth()
+
   async function load() {
     const { data } = await api.get('/jobs')
     setJobs(data)
@@ -169,18 +172,22 @@ export default function JobsPage() {
           <h1 className="text-2xl font-bold text-content">{t('nav.jobs')}</h1>
           <p className="text-muted mt-1">{t('jobs.countSuffix', { count: jobs.length })}</p>
         </div>
+        {canWrite && (
         <button className="btn-primary" onClick={() => setModal('create')}>
           <Plus className="w-4 h-4" /> {t('jobs.createButton')}
         </button>
+        )}
       </div>
 
       {jobs.length === 0 ? (
         <div className="card py-16 text-center">
           <Briefcase className="w-12 h-12 mx-auto text-faint mb-4" />
           <p className="text-muted font-medium">{t('jobs.emptyTitle')}</p>
+          {canWrite && (
           <button className="btn-primary mt-4" onClick={() => setModal('create')}>
             <Plus className="w-4 h-4" /> {t('jobs.createFull')}
           </button>
+          )}
         </div>
       ) : (
         <div className="space-y-3">
@@ -205,6 +212,7 @@ export default function JobsPage() {
                     </button>
                   </div>
                 </div>
+                {canWrite && (
                 <div className="flex items-center gap-2 shrink-0">
                   <button onClick={() => toggleActive(job)}
                     className="p-2 rounded-lg hover:bg-surface-muted text-faint hover:text-muted transition-colors">
@@ -216,6 +224,7 @@ export default function JobsPage() {
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
+                )}
               </div>
             </div>
           ))}
