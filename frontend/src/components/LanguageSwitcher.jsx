@@ -12,32 +12,7 @@ const LANG_META = {
 export default function LanguageSwitcher() {
   const { lang, setLang } = useT()
   const [open, setOpen] = useState(false)
-  const [coords, setCoords] = useState(null)
   const ref = useRef(null)
-  const btnRef = useRef(null)
-
-  const MENU_W = 176 // w-44
-
-  // Позиционируем меню через position: fixed по координатам кнопки —
-  // так список не обрезается контейнером сайдбара и всегда виден целиком.
-  const toggle = () => {
-    setOpen((v) => {
-      const next = !v
-      if (next && btnRef.current) {
-        const rect = btnRef.current.getBoundingClientRect()
-        const spaceBelow = window.innerHeight - rect.bottom
-        const dropUp = spaceBelow < 200
-        // сдвигаем вправо от кнопки, но не даём вылезти за правый край экрана
-        const left = Math.min(rect.left, window.innerWidth - MENU_W - 8)
-        setCoords(
-          dropUp
-            ? { left, bottom: window.innerHeight - rect.top + 6 }
-            : { left, top: rect.bottom + 6 }
-        )
-      }
-      return next
-    })
-  }
 
   useEffect(() => {
     if (!open) return
@@ -60,9 +35,8 @@ export default function LanguageSwitcher() {
   return (
     <div className="relative" ref={ref}>
       <button
-        ref={btnRef}
         type="button"
-        onClick={toggle}
+        onClick={() => setOpen((v) => !v)}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label="Выбор языка"
@@ -79,17 +53,11 @@ export default function LanguageSwitcher() {
         </svg>
       </button>
 
-      {open && coords && (
+      {/* Список открывается вверх, прямо над кнопкой (переключатель стоит внизу сайдбара). */}
+      {open && (
         <ul
           role="listbox"
-          style={{
-            position: 'fixed',
-            left: coords.left,
-            top: coords.top,
-            bottom: coords.bottom,
-            width: MENU_W,
-          }}
-          className="z-[9999] overflow-hidden rounded-lg border border-line bg-surface shadow-xl animate-fade-in"
+          className="absolute bottom-full left-0 mb-2 w-44 z-[9999] overflow-hidden rounded-lg border border-line bg-surface shadow-xl animate-fade-in"
         >
           {SUPPORTED_LANGS.map((code) => {
             const meta = LANG_META[code] || { label: code, native: code }
