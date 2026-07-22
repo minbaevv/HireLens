@@ -53,6 +53,8 @@ class Candidate(Base):
     hr_notes = Column(Text, nullable=True)  # Комментарий HR о финальном решении
     requires_manual_review = Column(Boolean, default=False, nullable=False)  # Low confidence flag
 
+    # Массовые операции — теги (JSON-список строк)
+    tags = Column(Text, nullable=True)
     summary = Column(Text, nullable=True)
     recommendation = Column(String(20), nullable=True)
     created_at = Column(DateTime, server_default=func.now())

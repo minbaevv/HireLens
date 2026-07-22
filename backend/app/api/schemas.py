@@ -140,6 +140,7 @@ class CandidateOut(BaseModel):
     ai_feedback: Optional[str] = None
     hr_notes: Optional[str] = None
     requires_manual_review: bool = False
+    tags: list[str] = []
 
     # 1.3 Unified Scale + Confidence Bounds (вычисляемые, не хранятся в БД)
     confidence_level: Optional[str] = None  # "low" | "medium" | "high"
@@ -157,6 +158,17 @@ class CandidateOut(BaseModel):
             if self.score is not None:
                 self.score_range = f"{round(self.score)} ±{margin}"
         return self
+
+    @field_validator("tags", mode="before")
+    @classmethod
+    def _parse_tags_out(cls, v):
+        if isinstance(v, str):
+            try:
+                parsed = json.loads(v)
+                return parsed if isinstance(parsed, list) else []
+            except (json.JSONDecodeError, TypeError):
+                return []
+        return v or []
 
     @field_validator("anti_cheat_flags", mode="before")
     @classmethod
@@ -181,7 +193,19 @@ class CandidateListItem(BaseModel):
     pre_score: Optional[float]
     recommendation: Optional[str]
     requires_manual_review: bool = False
+    tags: list[str] = []
     created_at: datetime
+
+    @field_validator("tags", mode="before")
+    @classmethod
+    def _parse_tags_li(cls, v):
+        if isinstance(v, str):
+            try:
+                parsed = json.loads(v)
+                return parsed if isinstance(parsed, list) else []
+            except (json.JSONDecodeError, TypeError):
+                return []
+        return v or []
 
 
 # --- Ground Truth Tracking schemas (Phase 10/10 - 1.1) ---

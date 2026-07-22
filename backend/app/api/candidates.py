@@ -7,7 +7,7 @@ from typing import List, Optional
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
 from sqlalchemy.orm import Session
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from fastapi.responses import Response, StreamingResponse
 
@@ -88,6 +88,28 @@ STATUS_LABELS: dict[CandidateStatus, str] = {
 
 class StageUpdateRequest(BaseModel):
     stage: CandidateStatus
+
+
+class BulkStatusRequest(BaseModel):
+    candidate_ids: List[int] = Field(min_length=1, max_length=500)
+    status: CandidateStatus
+    notify: bool = False
+
+
+class BulkTagsRequest(BaseModel):
+    candidate_ids: List[int] = Field(min_length=1, max_length=500)
+    add: List[str] = Field(default_factory=list, max_length=30)
+    remove: List[str] = Field(default_factory=list, max_length=30)
+
+
+class BulkNotifyRequest(BaseModel):
+    candidate_ids: List[int] = Field(min_length=1, max_length=500)
+
+
+class BulkActionResponse(BaseModel):
+    updated: int
+    skipped: int
+    total: int
 
 
 # ---------------------------------------------------------------------------
@@ -256,6 +278,7 @@ def list_candidates(
         default=None,
         description="Только кандидаты, требующие ручной проверки HR",
     ),
+    tag: Optional[str] = Query(default=None, description="Фильтр по тегу"),
     sort_by: str = Query(default="created_at", description="Сортировка: score | created_at"),
     order: str = Query(default="desc", description="asc | desc"),
     page: int = Query(default=1, ge=1, description="Номер страницы"),
@@ -284,6 +307,9 @@ def list_candidates(
 
     if requires_review is not None:
         query = query.filter(Candidate.requires_manual_review == requires_review)
+
+    if tag:
+        query = query.filter(Candidate.tags.ilike(f'%"{tag}"%'))
 
     if search:
         like = f"%{search.lower()}%"
@@ -446,6 +472,197 @@ def get_kanban_board(
     ]
 
     return KanbanBoard(columns=columns, total=len(all_candidates))
+
+
+# ---------------------------------------------------------------------------
+# Массовые операции (bulk): статусы, теги, уведомления
+# ---------------------------------------------------------------------------
+
+MAX_TAG_LENGTH = 30
+
+
+def _normalize_tags(raw: List[str]) -> List[str]:
+    """Обрезает пробелы, отбрасывает пустые, дедуплицирует (без учёта регистра)."""
+    result: List[str] = []
+    seen: set[str] = set()
+    for item in raw or []:
+        tag = (item or "").strip()[:MAX_TAG_LENGTH].strip()
+        if not tag:
+            continue
+        key = tag.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        result.append(tag)
+    return result
+
+
+def _load_tags(raw) -> List[str]:
+    if not raw:
+        return []
+    try:
+        parsed = json.loads(raw)
+        return parsed if isinstance(parsed, list) else []
+    except (ValueError, TypeError):
+        return []
+
+
+def _owned_candidates(db: Session, company_id: int, ids: List[int]) -> List[Candidate]:
+    if not ids:
+        return []
+    return (
+        db.query(Candidate)
+        .join(Job, Candidate.job_id == Job.id)
+        .filter(Job.company_id == company_id, Candidate.id.in_(ids))
+        .all()
+    )
+
+
+def _send_status_emails_async(payloads: List[tuple]) -> None:
+    """Фоновая отправка писем о статусе (name, email, job_title, language, status)."""
+    if not payloads:
+        return
+
+    def _run():
+        from app.services.email import notify_candidate_status
+        for name, email, job_title, language, status_value in payloads:
+            try:
+                notify_candidate_status(
+                    candidate_name=name,
+                    candidate_email=email,
+                    job_title=job_title,
+                    new_status=status_value,
+                    language=language,
+                )
+            except Exception as e:
+                logger.warning(f"Массовое уведомление не отправлено ({email}): {e}")
+
+    import threading
+    threading.Thread(target=_run, daemon=True).start()
+
+
+@hr_router.get("/tags", summary="Список уникальных тегов компании")
+def list_company_tags(
+    db: Session = Depends(get_db),
+    current_company: Company = Depends(get_current_company),
+) -> List[str]:
+    """Уникальные теги всех кандидатов компании (отсортировано)."""
+    rows = (
+        db.query(Candidate.tags)
+        .join(Job, Candidate.job_id == Job.id)
+        .filter(Job.company_id == current_company.id, Candidate.tags.isnot(None))
+        .all()
+    )
+    seen: dict[str, str] = {}
+    for (raw,) in rows:
+        for tag in _load_tags(raw):
+            seen.setdefault(tag.lower(), tag)
+    return sorted(seen.values(), key=lambda x: x.lower())
+
+
+@hr_router.post("/bulk/status", response_model=BulkActionResponse, summary="Массовая смена статуса")
+def bulk_update_status(
+    body: BulkStatusRequest,
+    db: Session = Depends(get_db),
+    actor: CurrentActor = Depends(require_write_access),
+) -> BulkActionResponse:
+    """Массово меняет статус выбранных кандидатов (роль admin/recruiter)."""
+    company = actor.company
+    candidates = _owned_candidates(db, company.id, body.candidate_ids)
+    updated = 0
+    email_payloads: List[tuple] = []
+    for c in candidates:
+        if c.status == body.status:
+            continue
+        c.status = body.status
+        updated += 1
+        if body.notify:
+            email_payloads.append(
+                (c.name, c.email, c.job.title, getattr(c.job, "language", "ru"), body.status.value)
+            )
+    db.commit()
+    if updated:
+        record_audit(
+            db,
+            company_id=company.id,
+            action="candidate.bulk_status_change",
+            entity_type="candidate",
+            detail={"new_status": body.status.value, "count": updated},
+            **actor_fields(actor),
+        )
+    if body.notify:
+        _send_status_emails_async(email_payloads)
+    total = len(set(body.candidate_ids))
+    return BulkActionResponse(updated=updated, skipped=total - updated, total=total)
+
+
+@hr_router.post("/bulk/tags", response_model=BulkActionResponse, summary="Массовые теги")
+def bulk_update_tags(
+    body: BulkTagsRequest,
+    db: Session = Depends(get_db),
+    actor: CurrentActor = Depends(require_write_access),
+) -> BulkActionResponse:
+    """Массово добавляет/удаляет теги (роль admin/recruiter)."""
+    to_add = _normalize_tags(body.add)
+    to_remove = {t.strip().lower() for t in (body.remove or []) if t and t.strip()}
+    if not to_add and not to_remove:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Укажите теги для добавления или удаления",
+        )
+    company = actor.company
+    candidates = _owned_candidates(db, company.id, body.candidate_ids)
+    updated = 0
+    for c in candidates:
+        current = _load_tags(c.tags)
+        new_tags = [t for t in current if t.lower() not in to_remove]
+        existing_lower = {t.lower() for t in new_tags}
+        for tag in to_add:
+            if tag.lower() not in existing_lower:
+                new_tags.append(tag)
+                existing_lower.add(tag.lower())
+        if new_tags != current:
+            c.tags = json.dumps(new_tags, ensure_ascii=False) if new_tags else None
+            updated += 1
+    db.commit()
+    if updated:
+        record_audit(
+            db,
+            company_id=company.id,
+            action="candidate.bulk_tags",
+            entity_type="candidate",
+            detail={"add": to_add, "remove": sorted(to_remove), "count": updated},
+            **actor_fields(actor),
+        )
+    total = len(set(body.candidate_ids))
+    return BulkActionResponse(updated=updated, skipped=total - updated, total=total)
+
+
+@hr_router.post("/bulk/notify", response_model=BulkActionResponse, summary="Массовое email-уведомление")
+def bulk_notify(
+    body: BulkNotifyRequest,
+    db: Session = Depends(get_db),
+    actor: CurrentActor = Depends(require_write_access),
+) -> BulkActionResponse:
+    """Отправляет каждому выбранному кандидату письмо о его текущем статусе (роль admin/recruiter)."""
+    company = actor.company
+    candidates = _owned_candidates(db, company.id, body.candidate_ids)
+    payloads: List[tuple] = [
+        (c.name, c.email, c.job.title, getattr(c.job, "language", "ru"), c.status.value)
+        for c in candidates
+    ]
+    _send_status_emails_async(payloads)
+    if payloads:
+        record_audit(
+            db,
+            company_id=company.id,
+            action="candidate.bulk_notify",
+            entity_type="candidate",
+            detail={"count": len(payloads)},
+            **actor_fields(actor),
+        )
+    total = len(set(body.candidate_ids))
+    return BulkActionResponse(updated=len(payloads), skipped=total - len(payloads), total=total)
 
 
 @hr_router.get(
