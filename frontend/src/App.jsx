@@ -19,6 +19,7 @@ import IntegrationsPage from './pages/IntegrationsPage'
 import BiasReportPage from './pages/BiasReportPage'
 import AcceptInvitePage from './pages/AcceptInvitePage'
 import ApplyPage from './pages/ApplyPage'
+import CareersPage from './pages/CareersPage'
 import InterviewPage from './pages/InterviewPage'
 import LandingPage from './pages/LandingPage'
 import CodingPage from './pages/CodingPage'
@@ -39,6 +40,7 @@ export default function App() {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
       <Route path="/apply/:token" element={<ApplyPage />} />
+      <Route path="/careers/:companyId" element={<CareersPage />} />
       <Route path="/team/accept" element={<AcceptInvitePage />} />
       <Route path="/interview/:interviewId" element={<InterviewPage />} />
       <Route path="/coding/:token" element={<CodingChallengePage />} />

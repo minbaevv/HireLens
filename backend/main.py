@@ -30,6 +30,7 @@ from app.api.coding import public_router as coding_public_router
 from app.api.integrations import router as integrations_router
 from app.api.google_calendar import router as google_calendar_router
 from app.api.public_api import router as public_api_router
+from app.api.careers import router as careers_router
 from app.core.config import settings
 from app.core.limiter import limiter
 
@@ -107,6 +108,7 @@ app.include_router(copilot_router)
 app.include_router(prompts_router)
 app.include_router(coding_router)
 app.include_router(coding_public_router)
+app.include_router(careers_router)  # public company careers page
 app.include_router(integrations_router)  # D2 — управление API-ключами и webhooks (JWT)
 app.include_router(google_calendar_router)  # B4 — Google Calendar: OAuth + автопланирование
 app.include_router(public_api_router)  # D2 — публичный API /api/v1 (X-API-Key)
