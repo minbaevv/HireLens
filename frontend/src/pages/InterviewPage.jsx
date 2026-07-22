@@ -9,10 +9,10 @@ import { useT } from '../i18n'
 import LanguageSwitcher from '../components/LanguageSwitcher'
 import InstallPrompt from '../components/InstallPrompt'
 
-function Message({ role, content }) {
+function Message({ role, content, delay = 0 }) {
   const isAI = role === 'ai'
   return (
-    <div className={`flex gap-3 animate-slide-up ${isAI ? '' : 'flex-row-reverse'}`}>
+    <div className={`flex gap-3 animate-slide-up ${isAI ? '' : 'flex-row-reverse'}`} style={{ animationDelay: `${delay}ms` }}>
       <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
         isAI ? 'bg-brand-600' : 'bg-surface-muted'
       }`}>
@@ -164,7 +164,7 @@ export default function InterviewPage() {
       </div>
 
       <div className="flex-1 overflow-auto px-4 py-6 max-w-2xl mx-auto w-full space-y-4">
-        {messages.map((m, i) => <Message key={i} role={m.role} content={m.content} />)}
+        {messages.map((m, i) => <Message key={i} role={m.role} content={m.content} delay={Math.min(i * 60, 300)} />)}
         {sending && (
           <div className="flex gap-3">
             <div className="w-8 h-8 rounded-full bg-brand-600 flex items-center justify-center">

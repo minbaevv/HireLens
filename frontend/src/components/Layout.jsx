@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
+import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { LayoutDashboard, Briefcase, Users, LogOut, LayoutGrid, BarChart2, Sparkles, UserCog, CreditCard, ShieldCheck, Plug, Scale, Code2, Search, ScrollText } from 'lucide-react'
 import api from '../api/client'
@@ -8,11 +8,12 @@ import Logo from './Logo'
 import LanguageSwitcher from './LanguageSwitcher'
 import ThemeSwitcher from './ThemeSwitcher'
 import CommandPalette from './CommandPalette'
+import { usePageTransition } from '../motion'
 
 export default function Layout() {
   const { company, logout, isAdmin } = useAuth()
   const navigate = useNavigate()
-  const location = useLocation()
+  const page = usePageTransition()
   const { t } = useT()
   const [isSuperadmin, setIsSuperadmin] = useState(false)
 
@@ -49,7 +50,7 @@ export default function Layout() {
               <Logo className="w-6 h-6" title="HireLens" />
             </div>
             <div>
-              <p className="text-sm font-bold text-content">HireLens</p>
+              <p className="text-sm font-bold text-content font-display">HireLens</p>
               <p className="text-xs text-faint">AI-скрининг кандидатов</p>
             </div>
           </div>
@@ -68,12 +69,22 @@ export default function Layout() {
             <NavLink
               key={to} to={to} end={end}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                `group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-base ${
                   isActive ? 'bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300' : 'text-muted hover:bg-surface-muted hover:text-content'
                 }`
               }
             >
-              <Icon className="w-4 h-4" />{label}
+              {({ isActive }) => (
+                <>
+                  <span
+                    aria-hidden="true"
+                    className={`absolute left-0 top-1.5 bottom-1.5 w-1 rounded-full bg-brand-500 transition-all duration-base ease-out-expo ${
+                      isActive ? 'opacity-100 scale-y-100' : 'opacity-0 scale-y-50'
+                    }`}
+                  />
+                  <Icon className="w-4 h-4" />{label}
+                </>
+              )}
             </NavLink>
           ))}
 
@@ -107,7 +118,7 @@ export default function Layout() {
       </aside>
 
       <main className="flex-1 overflow-auto">
-        <div key={location.pathname} className="animate-fade-in">
+        <div key={page.key} className={page.className}>
           <Outlet />
         </div>
       </main>

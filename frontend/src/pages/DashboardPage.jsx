@@ -8,6 +8,7 @@ import OnboardingChecklist from '../components/OnboardingChecklist'
 import { Skeleton, SkeletonStats } from '../components/Skeleton'
 import { useT } from '../i18n'
 import { useTheme } from '../theme'
+import { useCountUp } from '../motion'
 import {
   Tooltip, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -27,6 +28,13 @@ const STATUS_LABEL_KEYS = {
   completed:   'dashboard.statusCompleted',
   hired:       'dashboard.statusHired',
   rejected:    'dashboard.statusRejected',
+}
+
+// Число с count-up при монтировании; нечисловые («—») как есть.
+function StatValue({ value }) {
+  const isNumeric = typeof value === 'number' && Number.isFinite(value)
+  const animated = useCountUp(isNumeric ? value : 0)
+  return <p className="text-2xl font-bold text-content font-display">{isNumeric ? animated : value}</p>
 }
 
 export default function DashboardPage() {
@@ -127,7 +135,7 @@ export default function DashboardPage() {
     <div className="p-8">
       {showOnboarding && <Onboarding onDismiss={dismissOnboarding} />}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-content">{t('nav.dashboard')}</h1>
+        <h1 className="text-2xl font-bold text-content font-display">{t('nav.dashboard')}</h1>
         <p className="text-muted mt-1">{t('dashboard.subtitle')}</p>
       </div>
 
@@ -135,12 +143,12 @@ export default function DashboardPage() {
       <OnboardingChecklist stats={data} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {stats.map(({ label, value, sub, icon: Icon, color }) => (
-          <div key={label} className="card p-5">
+        {stats.map(({ label, value, sub, icon: Icon, color }, i) => (
+          <div key={label} className="card p-5 animate-fade-up" style={{ animationDelay: `${i * 80}ms` }}>
             <div className={`inline-flex p-2.5 rounded-xl ${color} mb-3`}>
               <Icon className="w-5 h-5" />
             </div>
-            <p className="text-2xl font-bold text-content">{value}</p>
+            <StatValue value={value} />
             <p className="text-sm text-muted mt-0.5">{label}</p>
             <p className="text-xs text-faint mt-1">{sub}</p>
           </div>

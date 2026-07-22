@@ -28,14 +28,17 @@ export default {
         surface: {
           DEFAULT: 'rgb(var(--color-surface) / <alpha-value>)',
           muted: 'rgb(var(--color-surface-muted) / <alpha-value>)',
+          elevated: 'rgb(var(--color-surface-elevated) / <alpha-value>)',
         },
         line: 'rgb(var(--color-line) / <alpha-value>)',
         content: 'rgb(var(--color-content) / <alpha-value>)',
         muted: 'rgb(var(--color-muted) / <alpha-value>)',
         faint: 'rgb(var(--color-faint) / <alpha-value>)',
+        accent: 'rgb(var(--color-accent-glow) / <alpha-value>)',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif']
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['Space Grotesk', 'Inter', 'system-ui', 'sans-serif'],
       },
       keyframes: {
         'fade-in': {
@@ -50,6 +53,20 @@ export default {
       animation: {
         'fade-in': 'fade-in 0.2s ease-out',
         'slide-up': 'slide-up 0.25s ease-out',
+      },
+      boxShadow: {
+        e1: 'var(--shadow-e1)',
+        e2: 'var(--shadow-e2)',
+        e3: 'var(--shadow-e3)',
+        'glow-accent': '0 0 0 1px rgb(var(--color-accent-glow) / 0.30), 0 10px 30px -10px rgb(var(--color-accent-glow) / 0.40)',
+      },
+      transitionTimingFunction: {
+        'out-expo': 'cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+      transitionDuration: {
+        fast: '150ms',
+        base: '250ms',
+        slow: '500ms',
       },
     }
   },

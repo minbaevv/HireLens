@@ -4,9 +4,9 @@ import Spinner from '../components/Spinner'
 import { useT } from '../i18n'
 import { TrendingUp, Users, Briefcase, CheckCircle } from 'lucide-react'
 
-function StatCard({ label, value, icon: Icon, color }) {
+function StatCard({ label, value, icon: Icon, color, delay = 0 }) {
   return (
-    <div className="card p-5">
+    <div className="card p-5 animate-fade-up" style={{ animationDelay: `${delay}ms` }}>
       <div className={`inline-flex p-2.5 rounded-xl ${color} mb-3`}>
         <Icon className="w-5 h-5" />
       </div>
@@ -59,15 +59,15 @@ export default function AnalyticsPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-content">{t('nav.analytics')}</h1>
+        <h1 className="text-2xl font-bold text-content font-display">{t('nav.analytics')}</h1>
         <p className="text-muted mt-1">{t('analytics.subtitle')}</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard label={t('dashboard.statVacancies')}  value={data.total_jobs ?? '—'}       icon={Briefcase}   color="bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300" />
-        <StatCard label={t('dashboard.statCandidates')} value={data.total_candidates ?? '—'} icon={Users}       color="bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300" />
-        <StatCard label={t('dashboard.statAvgScore')}   value={avgScore}                     icon={TrendingUp}  color="bg-orange-50 text-orange-600 dark:bg-orange-500/15 dark:text-orange-300" />
-        <StatCard label={t('analytics.hireRateLabel')}  value={hireRate}                     icon={CheckCircle} color="bg-green-50 text-green-600 dark:bg-green-500/15 dark:text-green-300" />
+        <StatCard label={t('dashboard.statVacancies')}  value={data.total_jobs ?? '—'}       icon={Briefcase}   color="bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300" delay={0} />
+        <StatCard label={t('dashboard.statCandidates')} value={data.total_candidates ?? '—'} icon={Users}       color="bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300" delay={80} />
+        <StatCard label={t('dashboard.statAvgScore')}   value={avgScore}                     icon={TrendingUp}  color="bg-orange-50 text-orange-600 dark:bg-orange-500/15 dark:text-orange-300" delay={160} />
+        <StatCard label={t('analytics.hireRateLabel')}  value={hireRate}                     icon={CheckCircle} color="bg-green-50 text-green-600 dark:bg-green-500/15 dark:text-green-300" delay={240} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -87,7 +87,7 @@ export default function AnalyticsPage() {
                       <span className="font-medium text-content">{count} ({pct}%)</span>
                     </div>
                     <div className="h-2 bg-surface-muted rounded-full overflow-hidden">
-                      <div className={`h-full ${color} rounded-full transition-all`} style={{ width: `${pct}%` }} />
+                      <div className={`h-full ${color} rounded-full origin-left animate-bar-grow-x`} style={{ width: `${pct}%` }} />
                     </div>
                   </div>
                 )

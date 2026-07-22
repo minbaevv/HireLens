@@ -4,7 +4,7 @@ export default function EmptyState({ icon: Icon, title, description, actionLabel
   return (
     <div className="card py-16 px-6 text-center flex flex-col items-center animate-fade-in">
       {Icon && (
-        <div className="inline-flex p-4 rounded-2xl bg-surface-muted text-faint mb-4">
+        <div className="inline-flex p-4 rounded-2xl bg-surface-muted text-muted mb-4 animate-pulse-dot">
           <Icon className="w-8 h-8" />
         </div>
       )}

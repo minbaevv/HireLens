@@ -262,7 +262,7 @@ export default function LandingPage() {
           <h2 className="text-3xl font-bold text-center text-content mb-12 text-balance">{t('landing.pricingTitle')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {(data?.pricing || []).map((plan, i) => (
-              <div key={i} className={`p-8 rounded-2xl border-2 transition-all duration-300 hover:-translate-y-1.5 ${
+              <div key={i} className={`p-8 rounded-2xl border-2 transition-all duration-base hover:-translate-y-1.5 hover:shadow-glow-accent ${
                 plan.highlighted
                   ? 'border-brand-600 bg-brand-600 text-white shadow-xl shadow-brand-200 dark:shadow-none md:scale-105 hover:shadow-2xl hover:shadow-brand-300/50'
                   : 'border-line bg-surface hover:border-brand-400 hover:shadow-lg'

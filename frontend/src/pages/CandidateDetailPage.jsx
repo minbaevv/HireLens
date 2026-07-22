@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api/client'
 import ScoreBadge from '../components/ScoreBadge'
+import { useCountUp } from '../motion'
 import StatusBadge from '../components/StatusBadge'
 import RecommendationBadge from '../components/RecommendationBadge'
 import Spinner from '../components/Spinner'
@@ -10,6 +11,26 @@ import { useAuth } from '../hooks/useAuth'
 import { ArrowLeft, CheckCircle, XCircle, FileText, Download, AlertTriangle, ClipboardCheck, RefreshCw } from 'lucide-react'
 import SchedulingCard from '../components/SchedulingCard'
 import CodingCard from '../components/CodingCard'
+
+// Скор с count-up + анимированной полосой и scan-line акцентом (мотив апертуры лого).
+function AnimatedScore({ score, label }) {
+  const pct = Math.max(0, Math.min(Math.round(score), 100))
+  const animated = useCountUp(pct)
+  const textColor = score >= 75 ? 'text-green-600' : score >= 50 ? 'text-yellow-600' : 'text-red-600'
+  const barColor = score >= 75 ? 'bg-green-500' : score >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+  return (
+    <div className="relative text-center min-w-[6rem] pl-4">
+      <span aria-hidden="true" className="pointer-events-none absolute left-0 top-1 bottom-4 w-px overflow-hidden">
+        <span className="block h-5 w-px bg-gradient-to-b from-transparent via-brand-400 to-transparent animate-scan" />
+      </span>
+      <p className={`text-4xl font-black font-display ${textColor}`}>{animated}</p>
+      <p className="text-xs text-faint mt-0.5">{label}</p>
+      <div className="mt-2 h-1.5 w-24 mx-auto bg-surface-muted rounded-full overflow-hidden">
+        <div className={`h-full origin-left rounded-full animate-bar-grow-x ${barColor}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  )
+}
 
 export default function CandidateDetailPage() {
   const { canWrite } = useAuth()
@@ -92,7 +113,6 @@ export default function CandidateDetailPage() {
   if (loading) return <div className="flex items-center justify-center h-full"><Spinner size="lg" /></div>
   if (!candidate) return null
 
-  const scoreColor = candidate.score >= 75 ? 'text-green-600' : candidate.score >= 50 ? 'text-yellow-600' : 'text-red-600'
   const safeParse = (s, fb) => { try { return JSON.parse(s) } catch { return fb } }
   const confidenceLevel = candidate.confidence_level || (candidate.confidence == null ? null : candidate.confidence >= 0.8 ? 'high' : candidate.confidence >= 0.5 ? 'medium' : 'low')
   const confLabel = confidenceLevel === 'high' ? t('candidateDetail.highConfidence') : confidenceLevel === 'medium' ? t('candidateDetail.mediumConfidence') : confidenceLevel === 'low' ? t('candidateDetail.lowConfidence') : ''
@@ -142,10 +162,7 @@ export default function CandidateDetailPage() {
             </div>
           </div>
           {candidate.score != null && (
-            <div className="text-center">
-              <p className={`text-4xl font-black ${scoreColor}`}>{Math.round(candidate.score)}</p>
-              <p className="text-xs text-faint mt-0.5">{t('candidateDetail.outOf100')}</p>
-            </div>
+            <AnimatedScore score={candidate.score} label={t('candidateDetail.outOf100')} />
           )}
         </div>
         <div className="flex flex-wrap gap-3 mt-5 pt-5 border-t border-line">

@@ -14,16 +14,31 @@
     --color-content: 17 24 39;          /* gray-900 */
     --color-muted: 107 114 128;         /* gray-500 */
     --color-faint: 156 163 175;         /* gray-400 */
+    --color-surface-elevated: 255 255 255; /* white */
+    --color-accent-glow: 59 130 246;    /* brand-500 */
+    --shadow-e1: 0 1px 2px 0 rgb(15 23 42 / 0.06), 0 1px 3px 0 rgb(15 23 42 / 0.10);
+    --shadow-e2: 0 4px 10px -2px rgb(15 23 42 / 0.10), 0 2px 6px -3px rgb(15 23 42 / 0.08);
+    --shadow-e3: 0 14px 32px -8px rgb(15 23 42 / 0.14), 0 6px 12px -6px rgb(15 23 42 / 0.10);
+    /* motion-токены (единые для всего фронта) */
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --dur-fast: 150ms;
+    --dur-base: 250ms;
+    --dur-slow: 500ms;
   }
 
   .dark {
-    --color-canvas: 2 6 23;             /* slate-950 */
-    --color-surface: 15 23 42;          /* slate-900 */
-    --color-surface-muted: 30 41 59;    /* slate-800 */
-    --color-line: 51 65 85;             /* slate-700 */
+    --color-canvas: 15 23 42;           /* slate-900 (фон страницы) */
+    --color-surface: 30 41 59;          /* slate-800 (карточки/сайдбар) */
+    --color-surface-muted: 51 65 85;    /* slate-700 */
+    --color-line: 71 85 105;            /* slate-600 */
     --color-content: 241 245 249;       /* slate-100 */
     --color-muted: 148 163 184;         /* slate-400 */
     --color-faint: 100 116 139;         /* slate-500 */
+    --color-surface-elevated: 44 57 82;  /* на ступень выше surface — глубина карточек */
+    --color-accent-glow: 34 211 238;     /* cyan-400 из логотипа */
+    --shadow-e1: 0 1px 2px 0 rgb(2 6 23 / 0.45);
+    --shadow-e2: 0 6px 16px -4px rgb(2 6 23 / 0.55);
+    --shadow-e3: 0 16px 40px -10px rgb(2 6 23 / 0.65);
   }
 
   body {
@@ -58,7 +73,7 @@
     @apply w-full px-3 py-2 text-sm border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-shadow bg-surface text-content placeholder:text-faint;
   }
   .card {
-    @apply bg-surface rounded-xl border border-line shadow-sm;
+    @apply bg-surface rounded-xl border border-line shadow-e1;
   }
   .badge-hire {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300;
@@ -82,6 +97,11 @@
   .glow-brand {
     background: radial-gradient(ellipse 60% 50% at 50% 40%, rgb(59 130 246 / 0.14), transparent 70%);
   }
+
+  /* Акцентное свечение для hover/focus (токен --color-accent-glow) */
+  .glow-accent {
+    box-shadow: 0 0 0 1px rgb(var(--color-accent-glow) / 0.30), 0 10px 30px -10px rgb(var(--color-accent-glow) / 0.40);
+  }
 }
 
 /* ─── Анимации (D1.6) ─────────────────────────────────────────── */
@@ -102,6 +122,10 @@
     from { transform: scaleY(0); }
     to   { transform: scaleY(1); }
   }
+  @keyframes bar-grow-x {
+    from { transform: scaleX(0); }
+    to   { transform: scaleX(1); }
+  }
   @keyframes pulse-dot {
     0%, 100% { opacity: 1; transform: scale(1); }
     50%      { opacity: 0.5; transform: scale(0.85); }
@@ -115,7 +139,24 @@
   .animate-fade-in   { animation: fade-in 0.9s ease-out both; }
   .animate-float     { animation: float-slow 6s ease-in-out infinite; }
   .animate-bar-grow  { animation: bar-grow 0.9s cubic-bezier(0.16, 1, 0.3, 1) both; transform-origin: bottom; }
+  .animate-bar-grow-x{ animation: bar-grow-x 0.9s cubic-bezier(0.16, 1, 0.3, 1) both; transform-origin: left; }
   .animate-pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
+
+  /* scan-line мотив апертуры лого (decorative) */
+  @keyframes scan-line {
+    0%   { transform: translateY(-120%); opacity: 0; }
+    15%  { opacity: 1; }
+    85%  { opacity: 1; }
+    100% { transform: translateY(120%); opacity: 0; }
+  }
+  .animate-scan { animation: scan-line 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite; }
+
+  /* Мягкий fade+slide при смене роута (usePageTransition) */
+  @keyframes page-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .animate-page { animation: page-in var(--dur-base) var(--ease-out) both; }
 
   /* Каскадные задержки для списков карточек */
   .delay-0   { animation-delay: 0ms; }

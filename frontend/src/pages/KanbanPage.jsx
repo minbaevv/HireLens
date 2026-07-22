@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import {
   DndContext,
   DragOverlay,
+  useDroppable,
   closestCorners,
   PointerSensor,
   useSensor,
@@ -40,7 +41,7 @@ function CandidateCard({ candidate, isDragging = false }) {
   const { t } = useT()
 
   return (
-    <div className={`bg-surface border border-line rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow ${isDragging ? 'opacity-50' : ''}`}>
+    <div className={`bg-surface border border-line rounded-xl p-4 shadow-e1 hover:shadow-e2 transition-shadow duration-base ${isDragging ? 'opacity-50' : ''}`}>
       <div className="flex items-start gap-2">
         <GripVertical className="w-4 h-4 text-faint flex-shrink-0 mt-0.5 cursor-grab" />
         <div className="flex-1 min-w-0">
@@ -76,6 +77,24 @@ function SortableCard({ candidate }) {
       <Link to={`/candidates/${candidate.id}`} onClick={(e) => isDragging && e.preventDefault()}>
         <CandidateCard candidate={candidate} isDragging={isDragging} />
       </Link>
+    </div>
+  )
+}
+
+// Колонка-дропзона: подсвечивается при наведении перетаскиваемой карточки.
+function DroppableColumn({ status, children }) {
+  const { setNodeRef, isOver } = useDroppable({ id: status })
+  return (
+    <div
+      ref={setNodeRef}
+      id={status}
+      className={`flex-1 space-y-3 min-h-[200px] rounded-xl p-3 border-2 border-dashed transition-colors duration-base ${
+        isOver
+          ? 'border-brand-400 bg-brand-50/70 dark:border-brand-500/50 dark:bg-brand-500/10'
+          : 'border-line bg-surface-muted'
+      }`}
+    >
+      {children}
     </div>
   )
 }
@@ -194,10 +213,7 @@ export default function KanbanPage() {
                     {col.count}
                   </span>
                 </div>
-                <div
-                  className="flex-1 space-y-3 min-h-[200px] bg-surface-muted rounded-xl p-3 border-2 border-dashed border-line"
-                  id={col.status}
-                >
+                <DroppableColumn status={col.status}>
                   {col.candidates.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full py-8 text-center">
                       <Icon className={`w-8 h-8 mb-2 opacity-25 ${meta.color}`} />
@@ -208,7 +224,7 @@ export default function KanbanPage() {
                       <SortableCard key={c.id} candidate={c} />
                     ))
                   )}
-                </div>
+                </DroppableColumn>
               </div>
             </SortableContext>
             )
@@ -217,7 +233,7 @@ export default function KanbanPage() {
       </div>
 
       <DragOverlay>
-        {activeCandidate ? <CandidateCard candidate={activeCandidate} /> : null}
+        {activeCandidate ? <div className="scale-[1.03] cursor-grabbing"><CandidateCard candidate={activeCandidate} /></div> : null}
       </DragOverlay>
     </DndContext>
   )
