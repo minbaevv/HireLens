@@ -111,7 +111,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Product preview — стилизованный мокап даш��орда (соц. доказательство продуктом) */}
+      {/* Product preview — стилизованный мокап дашборда (соц. доказательство продуктом) */}
       <section className="max-w-5xl mx-auto px-4 pb-4 animate-fade-up delay-400">
         <div className="rounded-2xl border border-line bg-canvas shadow-xl overflow-hidden animate-float">
           <div className="flex items-center gap-1.5 px-4 h-9 border-b border-line bg-surface-muted">

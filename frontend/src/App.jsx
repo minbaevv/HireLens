@@ -19,28 +19,17 @@ import IntegrationsPage from './pages/IntegrationsPage'
 import BiasReportPage from './pages/BiasReportPage'
 import AcceptInvitePage from './pages/AcceptInvitePage'
 import ApplyPage from './pages/ApplyPage'
-import CareersPage from './pages/CareersPage'
 import InterviewPage from './pages/InterviewPage'
 import LandingPage from './pages/LandingPage'
 import CodingPage from './pages/CodingPage'
 import CodingChallengePage from './pages/CodingChallengePage'
 import AuditLogPage from './pages/AuditLogPage'
+import CareersPage from './pages/CareersPage'
 import Layout from './components/Layout'
 
 function PrivateRoute({ children }) {
   const { token } = useAuth()
   return token ? children : <Navigate to="/landing" replace />
-}
-
-// Доступ только для админа/владельца. Рекрутёра и наблюдателя уводим на главную,
-// чтобы они не попадали по прямой ссылке на страницы, где всё равно получат 403.
-function AdminRoute({ children }) {
-  const { token, company, isAdmin, isOwner } = useAuth()
-  if (!token) return <Navigate to="/landing" replace />
-  // Роль ещё грузится (/auth/me не ответил) — ничего не редиректим,
-  // иначе даже владелец вылетает с /team и /integrations на первом рендере.
-  if (!company) return null
-  return (isAdmin || isOwner) ? children : <Navigate to="/" replace />
 }
 
 export default function App() {
@@ -52,10 +41,10 @@ export default function App() {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
       <Route path="/apply/:token" element={<ApplyPage />} />
-      <Route path="/careers/:companyId" element={<CareersPage />} />
       <Route path="/team/accept" element={<AcceptInvitePage />} />
       <Route path="/interview/:interviewId" element={<InterviewPage />} />
       <Route path="/coding/:token" element={<CodingChallengePage />} />
+      <Route path="/careers/:companyId" element={<CareersPage />} />
       <Route path="/" element={
         <PrivateRoute>
           <Layout />
@@ -69,13 +58,13 @@ export default function App() {
         <Route path="kanban" element={<KanbanPage />} />
         <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="copilot" element={<CopilotPage />} />
-        <Route path="team" element={<AdminRoute><TeamPage /></AdminRoute>} />
-        <Route path="integrations" element={<AdminRoute><IntegrationsPage /></AdminRoute>} />
+        <Route path="team" element={<TeamPage />} />
+        <Route path="integrations" element={<IntegrationsPage />} />
         <Route path="coding" element={<CodingPage />} />
         <Route path="governance" element={<BiasReportPage />} />
-        <Route path="audit" element={<AdminRoute><AuditLogPage /></AdminRoute>} />
         <Route path="billing" element={<BillingPage />} />
         <Route path="admin" element={<AdminPage />} />
+        <Route path="audit" element={<AuditLogPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

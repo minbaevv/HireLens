@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { LayoutDashboard, Briefcase, Users, LogOut, LayoutGrid, BarChart2, Sparkles, UserCog, CreditCard, ShieldCheck, Plug, Scale, Code2, Search } from 'lucide-react'
+import { LayoutDashboard, Briefcase, Users, LogOut, LayoutGrid, BarChart2, Sparkles, UserCog, CreditCard, ShieldCheck, Plug, Scale, Code2, ScrollText, Search } from 'lucide-react'
 import api from '../api/client'
 import { useT } from '../i18n'
 import Logo from './Logo'
@@ -33,6 +33,7 @@ export default function Layout() {
     { to: '/governance', icon: Scale,          label: t('nav.governance') },
     { to: '/coding',     icon: Code2,          label: t('nav.coding') },
     { to: '/billing',    icon: CreditCard,      label: t('nav.billing') },
+    { to: '/audit',      icon: ScrollText,      label: t('nav.audit') },
   ]
 
   if (isSuperadmin) {
