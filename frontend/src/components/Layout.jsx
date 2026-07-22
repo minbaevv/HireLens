@@ -79,11 +79,6 @@ export default function Layout() {
             </NavLink>
           ))}
 
-          {/* Переключатели — сразу под меню, чтобы не оставлять «провал пустоты» */}
-          <div className="pt-3 mt-3 border-t border-line flex items-center justify-between gap-2 px-1">
-            <LanguageSwitcher />
-            <ThemeSwitcher />
-          </div>
         </nav>
 
         {/* Низ: пользователь + выход, прижаты к нижней кромке */}
@@ -94,6 +89,10 @@ export default function Layout() {
               <p className="text-xs text-faint truncate">{company.email}</p>
             </div>
           )}
+          <div className="flex items-center justify-between gap-2 px-1 pb-1">
+            <LanguageSwitcher />
+            <ThemeSwitcher />
+          </div>
           <button
             onClick={() => { logout(); navigate('/login') }}
             className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-muted hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/15 dark:hover:text-red-400 transition-colors"
