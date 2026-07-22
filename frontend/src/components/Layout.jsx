@@ -1,20 +1,19 @@
 import { useEffect, useState } from 'react'
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { LayoutDashboard, Briefcase, Users, LogOut, LayoutGrid, BarChart2, Sparkles, UserCog, CreditCard, ShieldCheck, Plug, Scale, Code2, Search, ScrollText } from 'lucide-react'
+import { LayoutDashboard, Briefcase, Users, LogOut, LayoutGrid, BarChart2, Sparkles, UserCog, CreditCard, ShieldCheck, Plug, Scale, Code2, Search } from 'lucide-react'
 import api from '../api/client'
 import { useT } from '../i18n'
 import Logo from './Logo'
 import LanguageSwitcher from './LanguageSwitcher'
 import ThemeSwitcher from './ThemeSwitcher'
 import CommandPalette from './CommandPalette'
-import { usePageTransition } from '../motion'
 import AnimatedBackground from './AnimatedBackground'
 
 export default function Layout() {
-  const { company, logout, isAdmin } = useAuth()
+  const { company, logout } = useAuth()
   const navigate = useNavigate()
-  const page = usePageTransition()
+  const location = useLocation()
   const { t } = useT()
   const [isSuperadmin, setIsSuperadmin] = useState(false)
 
@@ -29,9 +28,8 @@ export default function Layout() {
     { to: '/kanban',     icon: LayoutGrid,      label: t('nav.kanban') },
     { to: '/analytics',  icon: BarChart2,       label: t('nav.analytics') },
     { to: '/copilot',    icon: Sparkles,        label: t('nav.copilot') },
-    { to: '/team',       icon: UserCog,         label: t('nav.team'), adminOnly: true },
-    { to: '/integrations', icon: Plug,          label: t('nav.integrations'), adminOnly: true },
-    { to: '/audit',      icon: ScrollText,      label: t('nav.audit'), adminOnly: true },
+    { to: '/team',       icon: UserCog,         label: t('nav.team') },
+    { to: '/integrations', icon: Plug,          label: t('nav.integrations') },
     { to: '/governance', icon: Scale,          label: t('nav.governance') },
     { to: '/coding',     icon: Code2,          label: t('nav.coding') },
     { to: '/billing',    icon: CreditCard,      label: t('nav.billing') },
@@ -43,15 +41,16 @@ export default function Layout() {
 
   return (
     <div className="flex h-screen bg-canvas">
+      <AnimatedBackground variant="app" />
       <CommandPalette />
-      <aside className="w-64 bg-surface border-r border-line flex flex-col">
+      <aside className="relative z-10 w-64 bg-surface/85 backdrop-blur-xl border-r border-line flex flex-col">
         <div className="px-6 py-5 border-b border-line">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-[#0b1e3f] rounded-xl flex items-center justify-center">
               <Logo className="w-6 h-6" title="HireLens" />
             </div>
             <div>
-              <p className="text-sm font-bold text-content font-display">HireLens</p>
+              <p className="text-sm font-bold text-content">HireLens</p>
               <p className="text-xs text-faint">AI-скрининг кандидатов</p>
             </div>
           </div>
@@ -66,26 +65,16 @@ export default function Layout() {
             <span className="flex-1 text-left">{t('palette.open')}</span>
             <kbd className="text-[10px] border border-line rounded px-1.5 py-0.5">Ctrl K</kbd>
           </button>
-          {navItems.filter((item) => !item.adminOnly || isAdmin).map(({ to, icon: Icon, label, end }) => (
+          {navItems.map(({ to, icon: Icon, label, end }) => (
             <NavLink
               key={to} to={to} end={end}
               className={({ isActive }) =>
-                `group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-base ${
+                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive ? 'bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300' : 'text-muted hover:bg-surface-muted hover:text-content'
                 }`
               }
             >
-              {({ isActive }) => (
-                <>
-                  <span
-                    aria-hidden="true"
-                    className={`absolute left-0 top-1.5 bottom-1.5 w-1 rounded-full bg-brand-500 transition-all duration-base ease-out-expo ${
-                      isActive ? 'opacity-100 scale-y-100' : 'opacity-0 scale-y-50'
-                    }`}
-                  />
-                  <Icon className="w-4 h-4" />{label}
-                </>
-              )}
+              <Icon className="w-4 h-4" />{label}
             </NavLink>
           ))}
 
@@ -102,11 +91,6 @@ export default function Layout() {
             <div className="px-3 py-1">
               <p className="text-xs font-semibold text-content truncate">{company.name}</p>
               <p className="text-xs text-faint truncate">{company.email}</p>
-              {company.role && (
-                <span className="inline-block mt-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-surface-muted text-muted">
-                  {company.role === 'admin' ? t('team.roleAdmin') : company.role === 'recruiter' ? t('team.roleRecruiter') : t('team.roleViewer')}
-                </span>
-              )}
             </div>
           )}
           <button
@@ -118,9 +102,8 @@ export default function Layout() {
         </div>
       </aside>
 
-      <main className="relative flex-1 overflow-auto">
-        <AnimatedBackground subtle />
-        <div key={page.key} className={`relative z-10 ${page.className}`}>
+      <main className="relative z-10 flex-1 overflow-auto">
+        <div key={location.pathname} className="animate-fade-in">
           <Outlet />
         </div>
       </main>

@@ -4,6 +4,7 @@ import axios from 'axios'
 import { Bot, Upload, FileText } from 'lucide-react'
 import Spinner from '../components/Spinner'
 import LanguageSwitcher from '../components/LanguageSwitcher'
+import AnimatedBackground from '../components/AnimatedBackground'
 import { useT } from '../i18n'
 
 export default function ApplyPage() {
@@ -66,8 +67,9 @@ export default function ApplyPage() {
   )
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-50 to-brand-100 dark:from-slate-900 dark:to-slate-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg">
+    <div className="min-h-screen bg-canvas flex items-center justify-center p-4">
+      <AnimatedBackground variant="auth" />
+      <div className="relative z-10 w-full max-w-lg">
         <div className="flex justify-end mb-3">
           <LanguageSwitcher />
         </div>

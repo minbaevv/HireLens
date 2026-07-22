@@ -6,6 +6,7 @@ import { Eye, EyeOff } from 'lucide-react'
 import { useT } from '../i18n'
 import Logo from '../components/Logo'
 import LanguageSwitcher from '../components/LanguageSwitcher'
+import AnimatedBackground from '../components/AnimatedBackground'
 
 export default function LoginPage() {
   const { login } = useAuth()
@@ -39,8 +40,9 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-50 to-brand-100 dark:from-slate-900 dark:to-slate-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-canvas flex items-center justify-center p-4">
+      <AnimatedBackground variant="auth" />
+      <div className="relative z-10 w-full max-w-md">
         <div className="flex justify-end mb-2">
           <LanguageSwitcher />
         </div>
@@ -51,7 +53,7 @@ export default function LoginPage() {
           <h1 className="text-2xl font-bold text-content">HireLens</h1>
           <p className="text-muted mt-1">{t('login.subtitle')}</p>
         </div>
-        <div className="card p-8">
+        <div className="card p-8 backdrop-blur-xl bg-surface/90">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-sm font-medium text-content mb-1.5">{t('common.email')}</label>

@@ -6,6 +6,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useT } from '../i18n'
 import Logo from '../components/Logo'
 import LanguageSwitcher from '../components/LanguageSwitcher'
+import AnimatedBackground from '../components/AnimatedBackground'
 
 export default function AcceptInvitePage() {
   const { t } = useT()
@@ -38,8 +39,9 @@ export default function AcceptInvitePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-brand-50 to-brand-100 dark:from-slate-900 dark:to-slate-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-canvas flex items-center justify-center p-4">
+      <AnimatedBackground variant="auth" />
+      <div className="relative z-10 w-full max-w-md">
         <div className="flex justify-end mb-2">
           <LanguageSwitcher />
         </div>
@@ -50,7 +52,7 @@ export default function AcceptInvitePage() {
           <h1 className="text-2xl font-bold text-content">{t('accept.title')}</h1>
           <p className="text-muted mt-1">{t('accept.subtitle')}</p>
         </div>
-        <div className="card p-8">
+        <div className="card p-8 backdrop-blur-xl bg-surface/90">
           {!token ? (
             <div className="bg-red-50 border border-red-200 text-red-700 dark:bg-red-500/10 dark:border-red-500/30 dark:text-red-300 text-sm px-4 py-3 rounded-lg">
               {t('accept.noToken')}

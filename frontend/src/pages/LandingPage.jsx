@@ -64,9 +64,8 @@ export default function LandingPage() {
   }, [data])
 
   return (
-    <div className="relative min-h-screen bg-transparent">
-      <AnimatedBackground />
-      <div className="relative z-10">
+    <div className="min-h-screen bg-surface">
+      <AnimatedBackground variant="landing" />
       {/* Nav */}
       <nav className="border-b border-line sticky top-0 bg-surface/90 backdrop-blur z-50">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -112,7 +111,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Product preview — стилизованный мокап дашборда (соц. доказательство продуктом) */}
+      {/* Product preview — стилизованный мокап даш��орда (соц. доказательство продуктом) */}
       <section className="max-w-5xl mx-auto px-4 pb-4 animate-fade-up delay-400">
         <div className="rounded-2xl border border-line bg-canvas shadow-xl overflow-hidden animate-float">
           <div className="flex items-center gap-1.5 px-4 h-9 border-b border-line bg-surface-muted">
@@ -264,7 +263,7 @@ export default function LandingPage() {
           <h2 className="text-3xl font-bold text-center text-content mb-12 text-balance">{t('landing.pricingTitle')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {(data?.pricing || []).map((plan, i) => (
-              <div key={i} className={`p-8 rounded-2xl border-2 transition-all duration-base hover:-translate-y-1.5 hover:shadow-glow-accent ${
+              <div key={i} className={`p-8 rounded-2xl border-2 transition-all duration-300 hover:-translate-y-1.5 ${
                 plan.highlighted
                   ? 'border-brand-600 bg-brand-600 text-white shadow-xl shadow-brand-200 dark:shadow-none md:scale-105 hover:shadow-2xl hover:shadow-brand-300/50'
                   : 'border-line bg-surface hover:border-brand-400 hover:shadow-lg'
@@ -336,7 +335,6 @@ export default function LandingPage() {
           <span>{data?.contact_email}</span>
         </div>
       </footer>
-      </div>
     </div>
   )
 }
