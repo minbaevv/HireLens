@@ -63,6 +63,29 @@ export default function BiasReportPage() {
             <StatCard label={t('bias.manualReview')} value={data.manual_review_count} icon={Eye} color="bg-orange-50 text-orange-600 dark:bg-orange-500/15 dark:text-orange-300" />
           </div>
 
+          {data.items && data.items.length > 0 && (() => {
+            const counts = {}
+            data.items.forEach(it => (it.flags || []).forEach(f => { counts[f] = (counts[f] || 0) + 1 }))
+            const top = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5)
+            const max = top.length ? top[0][1] : 0
+            return (
+              <div className="card p-6 mb-8">
+                <h2 className="font-semibold text-content mb-4">{t('bias.topReasons')}</h2>
+                <div className="space-y-2">
+                  {top.map(([reason, count]) => (
+                    <div key={reason} className="flex items-center gap-3">
+                      <span className="text-xs text-muted w-40 shrink-0 truncate" title={reason}>{reason}</span>
+                      <div className="flex-1 h-2 rounded-full bg-surface-muted overflow-hidden">
+                        <div className="h-full bg-red-400 dark:bg-red-500/60 rounded-full" style={{ width: `${max ? (count / max) * 100 : 0}%` }} />
+                      </div>
+                      <span className="text-xs font-semibold text-content w-6 text-right">{count}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })()}
+
           <div className="card p-6">
             <h2 className="font-semibold text-content mb-4">{t('bias.flaggedListTitle')}</h2>
             {(!data.items || data.items.length === 0) ? (

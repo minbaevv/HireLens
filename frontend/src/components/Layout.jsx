@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { LayoutDashboard, Briefcase, Users, LogOut, LayoutGrid, BarChart2, Sparkles, UserCog, CreditCard, ShieldCheck, Plug, Scale, Code2, ScrollText, Search } from 'lucide-react'
+import { LayoutDashboard, Briefcase, Users, LogOut, LayoutGrid, BarChart2, Sparkles, UserCog, CreditCard, ShieldCheck, Plug, Scale, Code2, ScrollText, Search, Palette, Shield } from 'lucide-react'
 import api from '../api/client'
 import { useT } from '../i18n'
 import Logo from './Logo'
@@ -16,9 +16,11 @@ export default function Layout() {
   const location = useLocation()
   const { t } = useT()
   const [isSuperadmin, setIsSuperadmin] = useState(false)
+  const [brand, setBrand] = useState(null)
 
   useEffect(() => {
     api.get('/billing/me').then(r => setIsSuperadmin(!!r.data?.is_superadmin)).catch(() => {})
+    api.get('/branding').then(r => setBrand(r.data)).catch(() => {})
   }, [])
 
   const navItems = [
@@ -34,6 +36,8 @@ export default function Layout() {
     { to: '/coding',     icon: Code2,          label: t('nav.coding') },
     { to: '/billing',    icon: CreditCard,      label: t('nav.billing') },
     { to: '/audit',      icon: ScrollText,      label: t('nav.audit') },
+    { to: '/branding',   icon: Palette,         label: t('nav.branding') },
+    { to: '/privacy',    icon: Shield,          label: t('nav.privacy') },
   ]
 
   if (isSuperadmin) {
@@ -47,11 +51,16 @@ export default function Layout() {
       <aside className="relative z-10 w-64 bg-surface/85 backdrop-blur-xl border-r border-line flex flex-col">
         <div className="px-6 py-5 border-b border-line">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-[#0b1e3f] rounded-xl flex items-center justify-center">
-              <Logo className="w-6 h-6" title="HireLens" />
+            <div
+              className="w-9 h-9 bg-[#0b1e3f] rounded-xl flex items-center justify-center overflow-hidden"
+              style={brand?.enabled && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(brand?.color || '') ? { backgroundColor: brand.color } : undefined}
+            >
+              {brand?.enabled && brand?.logo_url
+                ? <img src={brand.logo_url} alt="" className="w-full h-full object-contain" />
+                : <Logo className="w-6 h-6" title="HireLens" />}
             </div>
             <div>
-              <p className="text-sm font-bold text-content">HireLens</p>
+              <p className="text-sm font-bold text-content">{brand?.enabled && brand?.name ? brand.name : 'HireLens'}</p>
               <p className="text-xs text-faint">AI-скрининг кандидатов</p>
             </div>
           </div>

@@ -25,6 +25,8 @@ import CodingPage from './pages/CodingPage'
 import CodingChallengePage from './pages/CodingChallengePage'
 import AuditLogPage from './pages/AuditLogPage'
 import CareersPage from './pages/CareersPage'
+import BrandingPage from './pages/BrandingPage'
+import PrivacyPage from './pages/PrivacyPage'
 import Layout from './components/Layout'
 
 function PrivateRoute({ children }) {
@@ -65,6 +67,8 @@ export default function App() {
         <Route path="billing" element={<BillingPage />} />
         <Route path="admin" element={<AdminPage />} />
         <Route path="audit" element={<AuditLogPage />} />
+        <Route path="branding" element={<BrandingPage />} />
+        <Route path="privacy" element={<PrivacyPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

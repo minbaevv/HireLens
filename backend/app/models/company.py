@@ -37,5 +37,14 @@ class Company(Base):
     )
     referred_by_company_id = Column(Integer, ForeignKey("companies.id"), nullable=True)
 
+    # Фаза 3 — White-label (брендирование), без внешних ключей
+    brand_enabled = Column(Boolean, default=False, nullable=False)
+    brand_name = Column(String(120), nullable=True)
+    brand_logo_url = Column(String(500), nullable=True)
+    brand_color = Column(String(9), nullable=True)
+
+    # Фаза 3 — Приватность/GDPR: срок хранения данных (дни); NULL = бессрочно
+    data_retention_days = Column(Integer, nullable=True)
+
     jobs = relationship("Job", back_populates="company", cascade="all, delete-orphan")
     team_members = relationship("TeamMember", back_populates="company", cascade="all, delete-orphan")
