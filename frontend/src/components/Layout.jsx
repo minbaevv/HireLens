@@ -66,7 +66,7 @@ export default function Layout() {
           </div>
         </div>
 
-        <nav className="px-3 py-4 space-y-1">
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
           <button
             onClick={() => window.dispatchEvent(new Event('open-command-palette'))}
             className="flex items-center gap-2 w-full px-3 py-2 mb-2 rounded-lg border border-line text-sm text-faint hover:bg-surface-muted hover:text-muted transition-colors"
