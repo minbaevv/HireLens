@@ -16,6 +16,7 @@ import ScoreBadge from '../components/ScoreBadge'
 import RecommendationBadge from '../components/RecommendationBadge'
 import Spinner from '../components/Spinner'
 import { useT } from '../i18n'
+import { useAuth } from '../hooks/useAuth'
 import { GripVertical, Inbox, Mic, CheckCircle, UserCheck, UserX } from 'lucide-react'
 
 // Иконки и цвета колонок по статусу (эмодзи из бэкенда не используем —
@@ -81,6 +82,7 @@ function SortableCard({ candidate }) {
 
 export default function KanbanPage() {
   const { t } = useT()
+  const { canWrite } = useAuth()
   const [board, setBoard] = useState(null)
   const [loading, setLoading] = useState(true)
   const [activeId, setActiveId] = useState(null)
@@ -114,6 +116,7 @@ export default function KanbanPage() {
     const { active, over } = event
     setActiveId(null)
 
+    if (!canWrite) return
     if (!over) return
 
     const candidateId = active.id

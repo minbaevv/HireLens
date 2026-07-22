@@ -31,6 +31,14 @@ function PrivateRoute({ children }) {
   return token ? children : <Navigate to="/landing" replace />
 }
 
+// Доступ только для админа/владельца. Рекрутёра и наблюдателя уводим на главную,
+// чтобы они не попадали по прямой ссылке на страницы, где всё равно получат 403.
+function AdminRoute({ children }) {
+  const { token, isAdmin } = useAuth()
+  if (!token) return <Navigate to="/landing" replace />
+  return isAdmin ? children : <Navigate to="/" replace />
+}
+
 export default function App() {
   return (
     <LanguageProvider>
@@ -57,8 +65,8 @@ export default function App() {
         <Route path="kanban" element={<KanbanPage />} />
         <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="copilot" element={<CopilotPage />} />
-        <Route path="team" element={<TeamPage />} />
-        <Route path="integrations" element={<IntegrationsPage />} />
+        <Route path="team" element={<AdminRoute><TeamPage /></AdminRoute>} />
+        <Route path="integrations" element={<AdminRoute><IntegrationsPage /></AdminRoute>} />
         <Route path="coding" element={<CodingPage />} />
         <Route path="governance" element={<BiasReportPage />} />
         <Route path="billing" element={<BillingPage />} />

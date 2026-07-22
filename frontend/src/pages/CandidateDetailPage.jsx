@@ -6,11 +6,13 @@ import StatusBadge from '../components/StatusBadge'
 import RecommendationBadge from '../components/RecommendationBadge'
 import Spinner from '../components/Spinner'
 import { useT } from '../i18n'
+import { useAuth } from '../hooks/useAuth'
 import { ArrowLeft, CheckCircle, XCircle, FileText, Download, AlertTriangle, ClipboardCheck, RefreshCw } from 'lucide-react'
 import SchedulingCard from '../components/SchedulingCard'
 import CodingCard from '../components/CodingCard'
 
 export default function CandidateDetailPage() {
+  const { canWrite } = useAuth()
   const { id } = useParams()
   const navigate = useNavigate()
   const { t } = useT()
@@ -119,11 +121,13 @@ export default function CandidateDetailPage() {
               <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">{t('candidateDetail.reviewBannerHint')}</p>
             </div>
           </div>
+          {canWrite && (
           <button onClick={rescore} disabled={rescoring}
             className="btn-secondary mt-3 border-amber-300 dark:border-amber-500/40 text-amber-800 dark:text-amber-300">
             <RefreshCw className={`w-4 h-4 ${rescoring ? 'animate-spin' : ''}`} />
             {rescoring ? t('candidateDetail.rescoreRunning') : t('candidateDetail.rescore')}
           </button>
+          )}
         </div>
       )}
 
@@ -145,7 +149,7 @@ export default function CandidateDetailPage() {
           )}
         </div>
         <div className="flex flex-wrap gap-3 mt-5 pt-5 border-t border-line">
-          {candidate.status !== 'hired' && candidate.status !== 'rejected' && (
+          {canWrite && candidate.status !== 'hired' && candidate.status !== 'rejected' && (
             <>
               <button onClick={() => updateStatus('hired')} disabled={updating}
                 className="btn-primary bg-green-600 hover:bg-green-700">
@@ -348,9 +352,11 @@ export default function CandidateDetailPage() {
           placeholder={t('candidateDetail.hrNotesPlaceholder')}
           value={notes} onChange={e => setNotes(e.target.value)} />
 
+        {canWrite && (
         <button onClick={saveDecision} disabled={!decision || savingDecision} className="btn-primary">
           <ClipboardCheck className="w-4 h-4" /> {t('candidateDetail.saveDecision')}
         </button>
+        )}
       </div>
 
       {candidate.resume_text && (

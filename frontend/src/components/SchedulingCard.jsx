@@ -4,6 +4,7 @@ import { CalendarPlus, Video, Trash2, Clock } from 'lucide-react'
 import api from '../api/client'
 import Spinner from './Spinner'
 import { useT } from '../i18n'
+import { useAuth } from '../hooks/useAuth'
 import { fmtDateTime, toInputValue, inputValueToISO, APP_TIMEZONE } from '../utils/datetime'
 
 function toLocalInputValue(d) {
@@ -12,6 +13,7 @@ function toLocalInputValue(d) {
 }
 
 export default function SchedulingCard({ candidateId }) {
+  const { canWrite } = useAuth()
   const { t } = useT()
   const [loading, setLoading] = useState(true)
   const [status, setStatus] = useState(null) // { enabled, connected, email }
@@ -119,7 +121,7 @@ export default function SchedulingCard({ candidateId }) {
         </div>
       )}
 
-      {status?.enabled && status?.connected && (
+      {canWrite && status?.enabled && status?.connected && (
         <>
           <p className="text-sm text-muted">{t('scheduling.hint')}</p>
           <p className="text-xs text-faint">🕒 {APP_TIMEZONE} (UTC+6)</p>

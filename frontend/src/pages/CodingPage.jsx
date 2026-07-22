@@ -4,6 +4,7 @@ import { Code2, Plus, Pencil, Trash2, Eye, EyeOff, ChevronDown, ChevronUp } from
 import api from '../api/client'
 import Spinner from '../components/Spinner'
 import { useT } from '../i18n'
+import { useAuth } from '../hooks/useAuth'
 
 const EMPTY_FORM = {
   title: '', description: '', language: 'python', difficulty: 'medium',
@@ -25,6 +26,7 @@ function statusLabel(st, t) {
 
 export default function CodingPage() {
   const { t } = useT()
+  const { canWrite } = useAuth()
   const [tab, setTab] = useState('challenges')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -147,7 +149,7 @@ export default function CodingPage() {
 
       {tab === 'challenges' && (
         <ChallengesTab
-          challenges={challenges} t={t}
+          challenges={challenges} t={t} canWrite={canWrite}
           onCreate={openCreate} onEdit={openEdit}
           onToggle={toggleActive} onDelete={removeChallenge}
         />
@@ -156,7 +158,7 @@ export default function CodingPage() {
       {tab === 'submissions' && (
         <SubmissionsTab
           submissions={submissions} challengeTitle={challengeTitle}
-          t={t} onReviewed={load}
+          t={t} onReviewed={load} canWrite={canWrite}
         />
       )}
 
@@ -171,14 +173,16 @@ export default function CodingPage() {
   )
 }
 
-function ChallengesTab({ challenges, t, onCreate, onEdit, onToggle, onDelete }) {
+function ChallengesTab({ challenges, t, canWrite, onCreate, onEdit, onToggle, onDelete }) {
   return (
     <div>
+      {canWrite && (
       <div className="flex justify-end mb-4">
         <button type="button" onClick={onCreate} className="btn-primary inline-flex items-center gap-1">
           <Plus className="w-4 h-4" />{t('coding.newChallenge')}
         </button>
       </div>
+      )}
       {challenges.length === 0 ? (
         <div className="text-center py-12 text-muted">
           <p className="font-medium">{t('coding.noChallenges')}</p>
@@ -201,6 +205,7 @@ function ChallengesTab({ challenges, t, onCreate, onEdit, onToggle, onDelete }) 
                     {c.max_score} {t('coding.pts')} · {c.time_limit_minutes ? `${c.time_limit_minutes} ${t('coding.min')}` : t('coding.noLimit')}
                   </p>
                 </div>
+                {canWrite && (
                 <div className="flex items-center gap-1 shrink-0">
                   <button type="button" onClick={() => onToggle(c)} title={c.is_active ? t('coding.deactivate') : t('coding.activate')} className="p-2 rounded-lg text-muted hover:bg-surface-muted">
                     {c.is_active ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
@@ -212,6 +217,7 @@ function ChallengesTab({ challenges, t, onCreate, onEdit, onToggle, onDelete }) 
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
+                )}
               </div>
             </div>
           ))}
@@ -285,7 +291,7 @@ function ChallengeForm({ form, setForm, editing, saving, onSubmit, onClose, t })
   )
 }
 
-function SubmissionsTab({ submissions, challengeTitle, t, onReviewed }) {
+function SubmissionsTab({ submissions, challengeTitle, t, onReviewed, canWrite }) {
   if (submissions.length === 0) {
     return (
       <div className="text-center py-12 text-muted">
@@ -297,13 +303,13 @@ function SubmissionsTab({ submissions, challengeTitle, t, onReviewed }) {
   return (
     <div className="space-y-3">
       {submissions.map(s => (
-        <SubmissionRow key={s.id} s={s} challengeTitle={challengeTitle} t={t} onReviewed={onReviewed} />
+        <SubmissionRow key={s.id} s={s} challengeTitle={challengeTitle} t={t} onReviewed={onReviewed} canWrite={canWrite} />
       ))}
     </div>
   )
 }
 
-function SubmissionRow({ s, challengeTitle, t, onReviewed }) {
+function SubmissionRow({ s, challengeTitle, t, onReviewed, canWrite }) {
   const [open, setOpen] = useState(false)
   const [manualScore, setManualScore] = useState(s.manual_score ?? '')
   const [notes, setNotes] = useState(s.reviewer_notes ?? '')
@@ -373,7 +379,7 @@ function SubmissionRow({ s, challengeTitle, t, onReviewed }) {
               : <p className="text-sm text-faint">{t('coding.noCode')}</p>}
           </div>
 
-          {s.status !== 'assigned' && (
+          {canWrite && s.status !== 'assigned' && (
             <form onSubmit={submitReview} className="space-y-3 border-t border-line pt-4">
               <div>
                 <label className="block text-sm font-medium text-content mb-1">{t('coding.manualScore')}</label>

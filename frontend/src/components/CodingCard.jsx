@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom'
 import { Code2, Copy, Check } from 'lucide-react'
 import api from '../api/client'
 import { useT } from '../i18n'
+import { useAuth } from '../hooks/useAuth'
 
 export default function CodingCard({ candidateId }) {
+  const { canWrite } = useAuth()
   const { t } = useT()
   const [challenges, setChallenges] = useState([])
   const [subs, setSubs] = useState([])
@@ -74,7 +76,7 @@ export default function CodingCard({ candidateId }) {
           {t('coding.noChallengesToAssign')}{' '}
           <Link to="/coding" className="text-brand-600 hover:underline">{t('coding.manageLink')}</Link>
         </p>
-      ) : (
+      ) : canWrite ? (
         <div className="flex flex-col sm:flex-row gap-2 mb-4">
           <select className="input flex-1" value={selected} onChange={e => setSelected(e.target.value)}>
             <option value="">{t('coding.selectChallenge')}</option>
@@ -84,7 +86,7 @@ export default function CodingCard({ candidateId }) {
             {assigning ? t('coding.assigning') : t('coding.assign')}
           </button>
         </div>
-      )}
+      ) : null}
 
       {error && <p className="text-sm text-red-500 mb-2">{error}</p>}
       {notice && <p className="text-sm text-green-600 mb-2">{notice}</p>}
