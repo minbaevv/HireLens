@@ -341,35 +341,89 @@ def list_candidates(
 
 @hr_router.get(
     "/export",
-    summary="Экспорт кандидатов в CSV",
+    summary="Экспорт кандидатов (CSV / Excel / PDF)",
 )
-def export_candidates_csv(
+def export_candidates(
+    format: str = Query(default="csv", pattern="^(csv|xlsx|pdf)$", description="csv | xlsx | pdf"),
     job_id: Optional[int] = Query(default=None, description="Фильтр по вакансии"),
     status_filter: Optional[CandidateStatus] = Query(default=None, alias="status"),
+    search: Optional[str] = Query(default=None, description="Поиск по имени/email"),
+    tag: Optional[str] = Query(default=None, description="Фильтр по тегу"),
+    requires_review: Optional[bool] = Query(default=None, description="Только требующие проверки"),
+    ids: Optional[str] = Query(default=None, description="ID кандидатов через запятую (экспорт выбранных)"),
     db: Session = Depends(get_db),
     current_company: Company = Depends(get_current_company),
 ):
-    """Скачивает CSV файл со всеми кандидатами компании."""
-    from app.services.export import generate_candidates_csv
+    """Экспортирует кандидатов компании в CSV/Excel/PDF с учётом фильтров или выбранных ID."""
+    from app.services.export import (
+        generate_candidates_csv,
+        generate_candidates_list_pdf,
+        generate_candidates_xlsx,
+    )
 
     query = (
         db.query(Candidate)
         .join(Job, Candidate.job_id == Job.id)
         .filter(Job.company_id == current_company.id)
     )
-    if job_id:
-        query = query.filter(Candidate.job_id == job_id)
-    if status_filter:
-        query = query.filter(Candidate.status == status_filter)
+
+    if ids:
+        id_list = [int(p.strip()) for p in ids.split(",") if p.strip().isdigit()]
+        if not id_list:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Некорректный список ID",
+            )
+        query = query.filter(Candidate.id.in_(id_list[:1000]))
+    else:
+        if job_id:
+            query = query.filter(Candidate.job_id == job_id)
+        if status_filter:
+            query = query.filter(Candidate.status == status_filter)
+        if tag:
+            query = query.filter(Candidate.tags.ilike(f'%"{tag}"%'))
+        if requires_review is not None:
+            query = query.filter(Candidate.requires_manual_review == requires_review)
+        if search:
+            like = f"%{search.lower()}%"
+            from sqlalchemy import func as sqlfunc
+            query = query.filter(
+                sqlfunc.lower(Candidate.name).like(like)
+                | sqlfunc.lower(Candidate.email).like(like)
+            )
 
     candidates = query.order_by(Candidate.created_at.desc()).all()
-    csv_bytes = generate_candidates_csv(candidates)
+    ts = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
 
-    filename = f"candidates_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}.csv"
+    if format == "xlsx":
+        try:
+            content = generate_candidates_xlsx(candidates)
+        except RuntimeError as e:
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
+        return Response(
+            content=content,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f'attachment; filename="candidates_{ts}.xlsx"'},
+        )
+
+    if format == "pdf":
+        try:
+            content = generate_candidates_list_pdf(
+                candidates, company_name=getattr(current_company, "name", None)
+            )
+        except RuntimeError as e:
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
+        return Response(
+            content=content,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="candidates_{ts}.pdf"'},
+        )
+
+    csv_bytes = generate_candidates_csv(candidates)
     return Response(
         content=csv_bytes,
         media_type="text/csv; charset=utf-8-sig",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers={"Content-Disposition": f'attachment; filename="candidates_{ts}.csv"'},
     )
 
 

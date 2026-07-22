@@ -1,6 +1,7 @@
-"""Сервис экспорта: CSV список кандидатов + PDF отчёт кандидата."""
+"""Сервис экспорта: CSV/Excel список кандидатов + PDF (отчёт кандидата и список)."""
 import csv
 import io
+import json
 import logging
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
@@ -23,30 +24,99 @@ def _local_dt(dt):
         return dt
 
 
+def _tags_str(raw) -> str:
+    """JSON-строку тегов кандидата превращает в 'tag1, tag2'."""
+    if not raw:
+        return ""
+    try:
+        val = json.loads(raw) if isinstance(raw, str) else raw
+        if isinstance(val, list):
+            return ", ".join(str(x) for x in val if x)
+    except Exception:
+        pass
+    return str(raw)
+
+
+# Общий набор колонок для табличного экспорта (CSV/Excel)
+_EXPORT_HEADERS = [
+    "ID", "Имя", "Email", "Статус", "Оценка",
+    "Пре-скрин", "Рекомендация", "Теги", "Вакансия ID", "Дата подачи",
+]
+
+
+def _row_values(c) -> list:
+    """Значения одной строки кандидата (строковые, для CSV)."""
+    return [
+        c.id,
+        c.name,
+        c.email,
+        c.status.value if hasattr(c.status, "value") else str(c.status),
+        f"{c.score:.1f}" if c.score is not None else "",
+        f"{c.pre_score:.0f}" if getattr(c, "pre_score", None) is not None else "",
+        c.recommendation or "",
+        _tags_str(getattr(c, "tags", None)),
+        c.job_id,
+        _local_dt(c.created_at).strftime("%Y-%m-%d %H:%M") if c.created_at else "",
+    ]
+
+
 def generate_candidates_csv(candidates: list) -> bytes:
     """Генерирует CSV со списком кандидатов."""
     output = io.StringIO()
     writer = csv.writer(output, quoting=csv.QUOTE_ALL)
+    writer.writerow(_EXPORT_HEADERS)
+    for c in candidates:
+        writer.writerow(_row_values(c))
+    return output.getvalue().encode("utf-8-sig")  # utf-8-sig для Excel
 
-    # Заголовок
-    writer.writerow([
-        "ID", "Имя", "Email", "Статус",
-        "Оценка", "Рекомендация", "Вакансия ID", "Дата подачи",
-    ])
+
+def generate_candidates_xlsx(candidates: list) -> bytes:
+    """Генерирует Excel (.xlsx) со списком кандидатов."""
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Alignment, Font, PatternFill
+        from openpyxl.utils import get_column_letter
+    except ImportError:
+        raise RuntimeError("Библиотека openpyxl не установлена. Запусти: pip install openpyxl")
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Кандидаты"
+
+    header_fill = PatternFill(fill_type="solid", fgColor="4F46E5")
+    header_font = Font(bold=True, color="FFFFFF")
+    ws.append(_EXPORT_HEADERS)
+    for col in range(1, len(_EXPORT_HEADERS) + 1):
+        cell = ws.cell(row=1, column=col)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
 
     for c in candidates:
-        writer.writerow([
-            c.id,
-            c.name,
-            c.email,
-            c.status.value,
-            f"{c.score:.1f}" if c.score is not None else "",
-            c.recommendation or "",
-            c.job_id,
-            _local_dt(c.created_at).strftime("%Y-%m-%d %H:%M") if c.created_at else "",
-        ])
+        row = _row_values(c)
+        # Оценка и пре-скрин — числами, чтобы Excel корректно сортировал
+        if row[4] != "":
+            try:
+                row[4] = float(row[4])
+            except Exception:
+                pass
+        if row[5] != "":
+            try:
+                row[5] = int(float(row[5]))
+            except Exception:
+                pass
+        ws.append(row)
 
-    return output.getvalue().encode("utf-8-sig")  # utf-8-sig для Excel
+    widths = [6, 24, 30, 14, 8, 10, 16, 26, 12, 18]
+    for i, w in enumerate(widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+    ws.freeze_panes = "A2"
+    last_col = get_column_letter(len(_EXPORT_HEADERS))
+    ws.auto_filter.ref = f"A1:{last_col}{max(1, ws.max_row)}"
+
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    return buffer.getvalue()
 
 
 def _register_cyrillic_font():
@@ -235,6 +305,105 @@ def generate_candidate_pdf(candidate, job_title: str, messages: list = None) -> 
                        textColor=colors.HexColor("#9CA3AF"), spaceBefore=6,
                        fontName=font_name),
     ))
+
+    doc.build(story)
+    return buffer.getvalue()
+
+
+def generate_candidates_list_pdf(candidates: list, company_name: str = None) -> bytes:
+    """Генерирует PDF-отчёт со списком кандидатов (таблица, альбомная ориентация)."""
+    try:
+        from reportlab.lib import colors
+        from reportlab.lib.pagesizes import A4, landscape
+        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+        from reportlab.lib.units import cm
+        from reportlab.platypus import (
+            HRFlowable, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle,
+        )
+    except ImportError:
+        raise RuntimeError("Библиотека reportlab не установлена. Запусти: pip install reportlab")
+
+    font_name = _register_cyrillic_font() or "Helvetica"
+    font_bold = (font_name + "-Bold") if font_name != "Helvetica" else "Helvetica-Bold"
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=landscape(A4),
+        rightMargin=1.5 * cm,
+        leftMargin=1.5 * cm,
+        topMargin=1.5 * cm,
+        bottomMargin=1.5 * cm,
+    )
+
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        "CyrListTitle", parent=styles["Title"],
+        fontSize=16, spaceAfter=8, textColor=colors.HexColor("#4F46E5"),
+        fontName=font_name,
+    )
+    sub_style = ParagraphStyle(
+        "CyrListSub", parent=styles["Normal"],
+        fontSize=9, textColor=colors.HexColor("#6B7280"),
+        fontName=font_name, spaceAfter=8,
+    )
+    cell_style = ParagraphStyle(
+        "CyrCell", parent=styles["Normal"],
+        fontSize=8, leading=10, fontName=font_name,
+    )
+    head_cell_style = ParagraphStyle(
+        "CyrHeadCell", parent=styles["Normal"],
+        fontSize=8, leading=10, fontName=font_bold, textColor=colors.white,
+    )
+
+    def P(txt, style=cell_style):
+        return Paragraph(str(txt) if txt is not None else "", style)
+
+    story = []
+    header_txt = "HireLens — Список кандидатов"
+    if company_name:
+        header_txt += f" · {company_name}"
+    story.append(Paragraph(header_txt, title_style))
+    story.append(Paragraph(
+        f"Всего: {len(candidates)} · Сгенерировано: "
+        f"{_local_dt(datetime.now(timezone.utc)).strftime('%d.%m.%Y %H:%M')}",
+        sub_style,
+    ))
+    story.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor("#E5E7EB")))
+    story.append(Spacer(1, 0.3 * cm))
+
+    headers = ["ID", "Имя", "Email", "Статус", "Оценка", "Пре-скрин", "Рекоменд.", "Теги", "Дата"]
+    table_data = [[P(h, head_cell_style) for h in headers]]
+    for c in candidates:
+        table_data.append([
+            P(c.id),
+            P(c.name),
+            P(c.email),
+            P(c.status.value if hasattr(c.status, "value") else c.status),
+            P(f"{c.score:.0f}" if c.score is not None else "—"),
+            P(f"{c.pre_score:.0f}" if getattr(c, "pre_score", None) is not None else "—"),
+            P((c.recommendation or "—").upper()),
+            P(_tags_str(getattr(c, "tags", None)) or "—"),
+            P(_local_dt(c.created_at).strftime("%d.%m.%Y") if c.created_at else "—"),
+        ])
+
+    col_widths = [1.2 * cm, 4.5 * cm, 6 * cm, 2.5 * cm, 1.6 * cm, 1.8 * cm, 2.4 * cm, 4 * cm, 2.2 * cm]
+    table = Table(table_data, colWidths=col_widths, repeatRows=1)
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#4F46E5")),
+        ("FONTNAME", (0, 0), (-1, -1), font_name),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#E5E7EB")),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#F9FAFB")]),
+    ]))
+    story.append(table)
+
+    if not candidates:
+        story.append(Spacer(1, 0.5 * cm))
+        story.append(Paragraph("Нет кандидатов для экспорта.", sub_style))
 
     doc.build(story)
     return buffer.getvalue()

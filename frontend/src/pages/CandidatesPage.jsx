@@ -8,38 +8,76 @@ import { fmtDate } from '../utils/datetime'
 import Spinner from '../components/Spinner'
 import { SkeletonRows } from '../components/Skeleton'
 import { useT } from '../i18n'
-import { Users, Search, Download, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react'
+import { useAuth } from '../hooks/useAuth'
+import {
+  Users, Search, Download, ChevronUp, ChevronDown, ChevronLeft, ChevronRight,
+  AlertTriangle, Tag, X, Mail, FileSpreadsheet, FileText,
+} from 'lucide-react'
 
 const PAGE_SIZE = 20
 const DATE_LOCALES = { ru: 'ru-RU', ky: 'ky-KG', en: 'en-US' }
+const STATUS_OPTIONS = ['applied', 'interviewing', 'completed', 'hired', 'rejected']
+
+const EXPORT_MIME = {
+  csv: 'text/csv',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  pdf: 'application/pdf',
+}
 
 export default function CandidatesPage() {
   const { t, lang } = useT()
+  const { canWrite } = useAuth()
   const [searchParams] = useSearchParams()
   const [data, setData]             = useState({ items: [], total: 0, pages: 1 })
   const [loading, setLoading]       = useState(true)
   const [search, setSearch]         = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [tagFilter, setTagFilter]   = useState('')
   const [reviewOnly, setReviewOnly] = useState(searchParams.get('review') === '1')
   const [sortBy, setSortBy]         = useState('created_at')
   const [order, setOrder]           = useState('desc')
   const [page, setPage]             = useState(1)
+
+  const [availableTags, setAvailableTags] = useState([])
+  const [selected, setSelected]     = useState(() => new Set())
+  const [bulkStatus, setBulkStatus] = useState('')
+  const [bulkNotify, setBulkNotify] = useState(false)
+  const [tagInput, setTagInput]     = useState('')
+  const [busy, setBusy]             = useState(false)
+  const [flash, setFlash]           = useState(null)
+  const [exportOpen, setExportOpen] = useState(false)
+  const [exporting, setExporting]   = useState(false)
 
   const fetchCandidates = useCallback(() => {
     setLoading(true)
     const params = { page, page_size: PAGE_SIZE, sort_by: sortBy, order }
     if (search)       params.search = search
     if (statusFilter) params.status = statusFilter
+    if (tagFilter)    params.tag = tagFilter
     if (reviewOnly)   params.requires_review = true
     api.get('/candidates', { params })
       .then(r => setData(r.data))
       .finally(() => setLoading(false))
-  }, [page, sortBy, order, search, statusFilter, reviewOnly])
+  }, [page, sortBy, order, search, statusFilter, tagFilter, reviewOnly])
+
+  const fetchTags = useCallback(() => {
+    api.get('/candidates/tags')
+      .then(r => setAvailableTags(Array.isArray(r.data) ? r.data : []))
+      .catch(() => {})
+  }, [])
 
   useEffect(() => { fetchCandidates() }, [fetchCandidates])
+  useEffect(() => { fetchTags() }, [fetchTags])
 
   // Сброс на первую страницу при изменении фильтров
-  useEffect(() => { setPage(1) }, [search, statusFilter, reviewOnly, sortBy, order])
+  useEffect(() => { setPage(1) }, [search, statusFilter, tagFilter, reviewOnly, sortBy, order])
+
+  // Авто-скрытие флеш-сообщения
+  useEffect(() => {
+    if (!flash) return
+    const id = setTimeout(() => setFlash(null), 4000)
+    return () => clearTimeout(id)
+  }, [flash])
 
   function toggleSort(col) {
     if (sortBy === col) setOrder(o => o === 'desc' ? 'asc' : 'desc')
@@ -51,20 +89,101 @@ export default function CandidatesPage() {
     return order === 'desc' ? <ChevronDown className="w-3 h-3 inline ml-1" /> : <ChevronUp className="w-3 h-3 inline ml-1" />
   }
 
-  async function exportCsv() {
-    const params = {}
-    if (search)       params.search = search
-    if (statusFilter) params.status = statusFilter
-    const response = await api.get('/candidates/export', { responseType: 'blob', params })
-    const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/csv' }))
-    const link = document.createElement('a')
-    link.href = url
-    link.setAttribute('download', 'candidates.csv')
-    document.body.appendChild(link)
-    link.click()
-    link.remove()
-    window.URL.revokeObjectURL(url)
+  // ---- Выбор строк ----
+  const selectedIds = Array.from(selected)
+  const pageIds = data.items.map(c => c.id)
+  const allOnPageSelected = pageIds.length > 0 && pageIds.every(id => selected.has(id))
+
+  function toggleOne(id) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
   }
+
+  function toggleAllOnPage() {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (allOnPageSelected) pageIds.forEach(id => next.delete(id))
+      else pageIds.forEach(id => next.add(id))
+      return next
+    })
+  }
+
+  function clearSelection() { setSelected(new Set()) }
+
+  // ---- Массовые операции ----
+  async function applyBulkStatus() {
+    if (!selectedIds.length) return
+    if (!bulkStatus) { setFlash({ type: 'error', text: t('candidates.bulkPickStatus') }); return }
+    setBusy(true)
+    try {
+      const r = await api.post('/candidates/bulk/status', {
+        candidate_ids: selectedIds, status: bulkStatus, notify: bulkNotify,
+      })
+      setFlash({ type: 'success', text: t('candidates.bulkStatusDone', { count: r.data.updated }) })
+      setBulkStatus(''); setBulkNotify(false); clearSelection(); fetchCandidates()
+    } catch { setFlash({ type: 'error', text: t('candidates.bulkError') }) }
+    finally { setBusy(false) }
+  }
+
+  async function bulkTag(mode) {
+    if (!selectedIds.length) return
+    const value = tagInput.trim()
+    if (!value) return
+    setBusy(true)
+    try {
+      const r = await api.post('/candidates/bulk/tags', {
+        candidate_ids: selectedIds,
+        add: mode === 'add' ? [value] : [],
+        remove: mode === 'remove' ? [value] : [],
+      })
+      setFlash({
+        type: 'success',
+        text: t(mode === 'add' ? 'candidates.bulkTagAdded' : 'candidates.bulkTagRemoved', { count: r.data.updated }),
+      })
+      setTagInput(''); fetchCandidates(); fetchTags()
+    } catch { setFlash({ type: 'error', text: t('candidates.bulkError') }) }
+    finally { setBusy(false) }
+  }
+
+  async function notifyBulk() {
+    if (!selectedIds.length) return
+    setBusy(true)
+    try {
+      const r = await api.post('/candidates/bulk/notify', { candidate_ids: selectedIds })
+      setFlash({ type: 'success', text: t('candidates.bulkNotifyDone', { count: r.data.updated }) })
+    } catch { setFlash({ type: 'error', text: t('candidates.bulkError') }) }
+    finally { setBusy(false) }
+  }
+
+  // ---- Экспорт ----
+  async function doExport(format) {
+    setExporting(true)
+    try {
+      const params = { format }
+      if (selectedIds.length) {
+        params.ids = selectedIds.join(',')
+      } else {
+        if (search)       params.search = search
+        if (statusFilter) params.status = statusFilter
+        if (tagFilter)    params.tag = tagFilter
+        if (reviewOnly)   params.requires_review = true
+      }
+      const response = await api.get('/candidates/export', { responseType: 'blob', params })
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: EXPORT_MIME[format] }))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `candidates.${format}`)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch { setFlash({ type: 'error', text: t('candidates.bulkError') }) }
+    finally { setExporting(false); setExportOpen(false) }
+  }
+
 
   return (
     <div className="p-8">
@@ -73,26 +192,68 @@ export default function CandidatesPage() {
           <h1 className="text-2xl font-bold text-content">{t('nav.candidates')}</h1>
           <p className="text-muted mt-1">{t('candidates.countSuffix', { count: data.total })}</p>
         </div>
-        <button onClick={exportCsv} className="btn-secondary flex items-center gap-2">
-          <Download className="w-4 h-4" /> {t('candidates.exportCsv')}
-        </button>
+        <div className="relative">
+          <button
+            onClick={() => setExportOpen(o => !o)}
+            disabled={exporting}
+            className="btn-secondary flex items-center gap-2 disabled:opacity-50"
+          >
+            {exporting ? <Spinner className="w-4 h-4" /> : <Download className="w-4 h-4" />}
+            {t('candidates.export')}
+            <ChevronDown className="w-3.5 h-3.5" />
+          </button>
+          {exportOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setExportOpen(false)} />
+              <div className="absolute right-0 mt-2 w-56 rounded-lg border border-line bg-surface shadow-lg z-20 overflow-hidden">
+                <p className="px-3 py-2 text-xs text-faint border-b border-line">
+                  {selectedIds.length
+                    ? t('candidates.exportSelectedHint', { count: selectedIds.length })
+                    : t('candidates.exportAllHint')}
+                </p>
+                <button onClick={() => doExport('csv')} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-content hover:bg-surface-muted">
+                  <FileText className="w-4 h-4 text-muted" /> {t('candidates.exportCsvItem')}
+                </button>
+                <button onClick={() => doExport('xlsx')} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-content hover:bg-surface-muted">
+                  <FileSpreadsheet className="w-4 h-4 text-emerald-600" /> {t('candidates.exportExcel')}
+                </button>
+                <button onClick={() => doExport('pdf')} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-content hover:bg-surface-muted">
+                  <FileText className="w-4 h-4 text-red-500" /> {t('candidates.exportPdf')}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
+      {/* Флеш-сообщение */}
+      {flash && (
+        <div className={`mb-4 px-4 py-2 rounded-lg text-sm ${
+          flash.type === 'error'
+            ? 'bg-red-50 text-red-700 border border-red-200 dark:bg-red-500/15 dark:text-red-300 dark:border-red-500/30'
+            : 'bg-green-50 text-green-700 border border-green-200 dark:bg-green-500/15 dark:text-green-300 dark:border-green-500/30'
+        }`}>
+          {flash.text}
+        </div>
+      )}
+
       {/* Фильтры */}
-      <div className="flex gap-3 mb-6">
-        <div className="relative flex-1 max-w-sm">
+      <div className="flex flex-wrap gap-3 mb-6">
+        <div className="relative flex-1 min-w-[12rem] max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-faint" />
           <input className="input pl-9" placeholder={t('candidates.searchPlaceholder')}
             value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <select className="input w-auto" value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
           <option value="">{t('candidates.allStatuses')}</option>
-          <option value="applied">{t('status.applied')}</option>
-          <option value="interviewing">{t('status.interviewing')}</option>
-          <option value="completed">{t('status.completed')}</option>
-          <option value="hired">{t('status.hired')}</option>
-          <option value="rejected">{t('status.rejected')}</option>
+          {STATUS_OPTIONS.map(s => <option key={s} value={s}>{t(`status.${s}`)}</option>)}
         </select>
+        {availableTags.length > 0 && (
+          <select className="input w-auto" value={tagFilter} onChange={e => setTagFilter(e.target.value)}>
+            <option value="">{t('candidates.allTags')}</option>
+            {availableTags.map(tg => <option key={tg} value={tg}>{tg}</option>)}
+          </select>
+        )}
         <button
           onClick={() => setReviewOnly(v => !v)}
           className={`inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
@@ -107,6 +268,60 @@ export default function CandidatesPage() {
         </button>
       </div>
 
+      {/* Панель массовых действий */}
+      {canWrite && selectedIds.length > 0 && (
+        <div className="card mb-4 p-4 flex flex-wrap items-center gap-3 border-brand-200 bg-brand-50/40 dark:bg-brand-500/10">
+          <span className="text-sm font-semibold text-content">
+            {t('candidates.bulkSelected', { count: selectedIds.length })}
+          </span>
+
+          {/* Статус */}
+          <div className="flex items-center gap-2">
+            <select className="input w-auto py-1.5" value={bulkStatus} onChange={e => setBulkStatus(e.target.value)}>
+              <option value="">{t('candidates.bulkStatusPlaceholder')}</option>
+              {STATUS_OPTIONS.map(s => <option key={s} value={s}>{t(`status.${s}`)}</option>)}
+            </select>
+            <label className="flex items-center gap-1.5 text-xs text-muted select-none">
+              <input type="checkbox" checked={bulkNotify} onChange={e => setBulkNotify(e.target.checked)} />
+              {t('candidates.bulkNotifyCheckbox')}
+            </label>
+            <button onClick={applyBulkStatus} disabled={busy} className="btn-primary py-1.5 px-3 text-sm disabled:opacity-50">
+              {t('candidates.bulkApply')}
+            </button>
+          </div>
+
+          {/* Теги */}
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Tag className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-faint" />
+              <input
+                className="input py-1.5 pl-8 w-40"
+                placeholder={t('candidates.bulkTagPlaceholder')}
+                value={tagInput}
+                onChange={e => setTagInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') bulkTag('add') }}
+              />
+            </div>
+            <button onClick={() => bulkTag('add')} disabled={busy || !tagInput.trim()} className="btn-secondary py-1.5 px-3 text-sm disabled:opacity-50">
+              {t('candidates.bulkTagAdd')}
+            </button>
+            <button onClick={() => bulkTag('remove')} disabled={busy || !tagInput.trim()} className="btn-secondary py-1.5 px-3 text-sm disabled:opacity-50">
+              {t('candidates.bulkTagRemove')}
+            </button>
+          </div>
+
+          {/* Уведомление */}
+          <button onClick={notifyBulk} disabled={busy} className="btn-secondary py-1.5 px-3 text-sm flex items-center gap-1.5 disabled:opacity-50">
+            <Mail className="w-3.5 h-3.5" /> {t('candidates.bulkNotify')}
+          </button>
+
+          <button onClick={clearSelection} className="ml-auto text-sm text-muted hover:text-content flex items-center gap-1">
+            <X className="w-3.5 h-3.5" /> {t('candidates.bulkClear')}
+          </button>
+          {busy && <Spinner className="w-4 h-4" />}
+        </div>
+      )}
+
       {loading ? (
         <SkeletonRows rows={6} />
       ) : data.items.length === 0 ? (
@@ -120,6 +335,16 @@ export default function CandidatesPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-line">
+                  {canWrite && (
+                    <th className="px-4 py-3 w-10">
+                      <input
+                        type="checkbox"
+                        checked={allOnPageSelected}
+                        onChange={toggleAllOnPage}
+                        title={t('candidates.bulkSelectAll')}
+                      />
+                    </th>
+                  )}
                   <th className="text-left text-xs font-semibold text-muted uppercase tracking-wide px-6 py-3">{t('candidates.colCandidate')}</th>
                   <th className="text-left text-xs font-semibold text-muted uppercase tracking-wide px-6 py-3">{t('candidates.colStatus')}</th>
                   <th
@@ -137,12 +362,26 @@ export default function CandidatesPage() {
               </thead>
               <tbody className="divide-y divide-line">
                 {data.items.map(c => (
-                  <tr key={c.id} className="hover:bg-surface-muted transition-colors">
+                  <tr key={c.id} className={`hover:bg-surface-muted transition-colors ${selected.has(c.id) ? 'bg-brand-50/40 dark:bg-brand-500/10' : ''}`}>
+                    {canWrite && (
+                      <td className="px-4 py-4">
+                        <input type="checkbox" checked={selected.has(c.id)} onChange={() => toggleOne(c.id)} />
+                      </td>
+                    )}
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <div>
                           <p className="text-sm font-medium text-content">{c.name}</p>
                           <p className="text-xs text-faint">{c.email}</p>
+                          {Array.isArray(c.tags) && c.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {c.tags.map(tg => (
+                                <span key={tg} className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-brand-100 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300">
+                                  <Tag className="w-2.5 h-2.5" />{tg}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
                         {c.requires_manual_review && (
                           <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
