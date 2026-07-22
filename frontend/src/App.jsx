@@ -34,9 +34,12 @@ function PrivateRoute({ children }) {
 // Доступ только для админа/владельца. Рекрутёра и наблюдателя уводим на главную,
 // чтобы они не попадали по прямой ссылке на страницы, где всё равно получат 403.
 function AdminRoute({ children }) {
-  const { token, isAdmin } = useAuth()
+  const { token, company, isAdmin, isOwner } = useAuth()
   if (!token) return <Navigate to="/landing" replace />
-  return isAdmin ? children : <Navigate to="/" replace />
+  // Роль ещё грузится (/auth/me не ответил) — ничего не редиректим,
+  // иначе даже владелец вылетает с /team и /integrations на первом рендере.
+  if (!company) return null
+  return (isAdmin || isOwner) ? children : <Navigate to="/" replace />
 }
 
 export default function App() {
