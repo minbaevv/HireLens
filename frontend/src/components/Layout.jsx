@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { LayoutDashboard, Briefcase, Users, LogOut, LayoutGrid, BarChart2, Sparkles, UserCog, CreditCard, ShieldCheck, Plug, Scale, Code2, Search } from 'lucide-react'
+import { LayoutDashboard, Briefcase, Users, LogOut, LayoutGrid, BarChart2, Sparkles, UserCog, CreditCard, ShieldCheck, Plug, Scale, Code2, Search, ScrollText } from 'lucide-react'
 import api from '../api/client'
 import { useT } from '../i18n'
 import Logo from './Logo'
@@ -29,6 +29,7 @@ export default function Layout() {
     { to: '/copilot',    icon: Sparkles,        label: t('nav.copilot') },
     { to: '/team',       icon: UserCog,         label: t('nav.team'), adminOnly: true },
     { to: '/integrations', icon: Plug,          label: t('nav.integrations'), adminOnly: true },
+    { to: '/audit',      icon: ScrollText,      label: t('nav.audit'), adminOnly: true },
     { to: '/governance', icon: Scale,          label: t('nav.governance') },
     { to: '/coding',     icon: Code2,          label: t('nav.coding') },
     { to: '/billing',    icon: CreditCard,      label: t('nav.billing') },

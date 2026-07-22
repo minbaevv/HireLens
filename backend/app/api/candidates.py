@@ -221,6 +221,25 @@ def apply_to_job(
 
     logger.info(f"Новый кандидат #{candidate.id} на вакансию '{job.title}' (job_id={job.id})")
 
+    # D2 — webhook candidate.created (best-effort, поток заявки не блокируем).
+    try:
+        from app.services import webhook_service
+
+        webhook_service.dispatch_event(
+            db,
+            job.company.id,
+            "candidate.created",
+            {
+                "candidate_id": candidate.id,
+                "job_id": job.id,
+                "name": candidate.name,
+                "email": candidate.email,
+                "status": candidate.status.value if candidate.status else None,
+            },
+        )
+    except Exception as _wh_e:
+        logger.warning("Не удалось отправить webhook candidate.created: %s", _wh_e)
+
     # Telegram уведомление HR о новом кандидате
     notify_new_candidate(
         candidate_name=name,

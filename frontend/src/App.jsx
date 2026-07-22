@@ -24,6 +24,7 @@ import InterviewPage from './pages/InterviewPage'
 import LandingPage from './pages/LandingPage'
 import CodingPage from './pages/CodingPage'
 import CodingChallengePage from './pages/CodingChallengePage'
+import AuditLogPage from './pages/AuditLogPage'
 import Layout from './components/Layout'
 
 function PrivateRoute({ children }) {
@@ -72,6 +73,7 @@ export default function App() {
         <Route path="integrations" element={<AdminRoute><IntegrationsPage /></AdminRoute>} />
         <Route path="coding" element={<CodingPage />} />
         <Route path="governance" element={<BiasReportPage />} />
+        <Route path="audit" element={<AdminRoute><AuditLogPage /></AdminRoute>} />
         <Route path="billing" element={<BillingPage />} />
         <Route path="admin" element={<AdminPage />} />
       </Route>
