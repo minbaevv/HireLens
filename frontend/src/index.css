@@ -17,10 +17,10 @@
   }
 
   .dark {
-    --color-canvas: 15 23 42;           /* slate-900 (фон страницы) */
-    --color-surface: 30 41 59;          /* slate-800 (карточки/сайдбар) */
-    --color-surface-muted: 51 65 85;    /* slate-700 */
-    --color-line: 71 85 105;            /* slate-600 */
+    --color-canvas: 2 6 23;             /* slate-950 */
+    --color-surface: 15 23 42;          /* slate-900 */
+    --color-surface-muted: 30 41 59;    /* slate-800 */
+    --color-line: 51 65 85;             /* slate-700 */
     --color-content: 241 245 249;       /* slate-100 */
     --color-muted: 148 163 184;         /* slate-400 */
     --color-faint: 100 116 139;         /* slate-500 */
