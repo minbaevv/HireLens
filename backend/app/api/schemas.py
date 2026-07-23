@@ -110,6 +110,10 @@ class JobPublicOut(BaseModel):
     description: str
     requirements: str
     language: str = "ru"
+    # Брендинг компании (если включён) для публичных страниц кандидата
+    company_name: Optional[str] = None
+    company_logo_url: Optional[str] = None
+    company_color: Optional[str] = None
 
 
 class CandidateApply(BaseModel):

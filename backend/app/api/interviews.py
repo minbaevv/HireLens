@@ -80,6 +80,9 @@ class InterviewOut(BaseModel):
     status: InterviewStatus
     messages: List[MessageOut] = []
     seconds_remaining: Optional[int] = None
+    company_name: Optional[str] = None
+    company_logo_url: Optional[str] = None
+    company_color: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------
@@ -337,12 +340,23 @@ def get_interview(
         .all()
     )
     from app.ai.interview_service import _seconds_remaining
+    company = None
+    if interview.candidate and interview.candidate.job:
+        company = interview.candidate.job.company
+    brand = {}
+    if company is not None and getattr(company, "brand_enabled", False):
+        brand = {
+            "company_name": company.brand_name or None,
+            "company_logo_url": company.brand_logo_url or None,
+            "company_color": company.brand_color or None,
+        }
     return InterviewOut(
         id=interview.id,
         candidate_id=interview.candidate_id,
         status=interview.status,
         messages=[MessageOut.model_validate(m) for m in messages],
         seconds_remaining=_seconds_remaining(interview),
+        **brand,
     )
 
 

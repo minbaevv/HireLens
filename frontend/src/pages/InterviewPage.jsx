@@ -44,6 +44,8 @@ export default function InterviewPage() {
   const [timerOn, setTimerOn] = useState(false)
   const deadlineRef = useRef(null)
   const finishedRef = useRef(false)
+  const [brandLogo, setBrandLogo] = useState(location.state?.companyLogoUrl || null)
+  const [brandName, setBrandName] = useState(location.state?.companyName || null)
   const bottomRef = useRef(null)
 
   // Голосовая запись
@@ -67,6 +69,7 @@ export default function InterviewPage() {
     } else {
       axios.get(`/api/interviews/${interviewId}`, { headers: authHeaders }).then(r => {
         setMessages(r.data.messages)
+        if (r.data.company_logo_url) { setBrandLogo(r.data.company_logo_url); setBrandName(r.data.company_name || null) }
         if (r.data.status === 'completed') setDone(true)
         else armTimer(r.data.seconds_remaining)
       })
@@ -178,8 +181,10 @@ export default function InterviewPage() {
         className="bg-surface border-b border-line px-4 py-3 flex items-center gap-3"
         style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}
       >
-        <div className="w-9 h-9 bg-surface border border-line rounded-xl flex items-center justify-center shrink-0">
-          <Logo className="w-6 h-6" title="HireLens" />
+        <div className="w-9 h-9 bg-surface border border-line rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
+          {brandLogo
+            ? <img src={brandLogo} alt={brandName || ''} className="w-full h-full object-contain" />
+            : <Logo className="w-6 h-6" title="HireLens" />}
         </div>
         <div className="min-w-0">
           <p className="text-sm font-semibold text-content truncate">{t('interview.headerTitle')}</p>

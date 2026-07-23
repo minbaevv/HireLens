@@ -128,7 +128,21 @@ def get_job_by_token(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Вакансия не найдена или уже закрыта",
         )
-    return JobPublicOut.model_validate(job)
+    company = job.company
+    brand = {}
+    if company is not None and getattr(company, "brand_enabled", False):
+        brand = {
+            "company_name": company.brand_name or None,
+            "company_logo_url": company.brand_logo_url or None,
+            "company_color": company.brand_color or None,
+        }
+    return JobPublicOut(
+        title=job.title,
+        description=job.description,
+        requirements=job.requirements,
+        language=job.language,
+        **brand,
+    )
 
 
 @router.post(

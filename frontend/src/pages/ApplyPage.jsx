@@ -48,7 +48,7 @@ export default function ApplyPage() {
       // SEC-1: токен доступа к интервью — без него бэкенд отклонит запросы
       sessionStorage.setItem(`interview_token_${iv.data.interview_id}`, iv.data.access_token)
       navigate(`/interview/${iv.data.interview_id}`, {
-        state: { firstMessage: iv.data.message, secondsRemaining: iv.data.seconds_remaining }
+        state: { firstMessage: iv.data.message, secondsRemaining: iv.data.seconds_remaining, companyLogoUrl: job.company_logo_url, companyName: job.company_name }
       })
     } catch (err) {
       setError(err.response?.data?.detail || t('apply.error'))
@@ -76,8 +76,10 @@ export default function ApplyPage() {
           <LanguageSwitcher alignRight />
         </div>
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-surface border border-line rounded-2xl mb-4 shadow-lg">
-            <Logo className="w-9 h-9" title="HireLens" />
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-surface border border-line rounded-2xl mb-4 shadow-lg overflow-hidden">
+            {job.company_logo_url
+              ? <img src={job.company_logo_url} alt={job.company_name || ''} className="w-full h-full object-contain" />
+              : <Logo className="w-9 h-9" title="HireLens" />}
           </div>
           <h1 className="text-2xl font-bold text-content">{job.title}</h1>
           <p className="text-muted mt-1">{t('apply.subtitle')}</p>
