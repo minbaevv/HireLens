@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { LayoutDashboard, Briefcase, Users, LogOut, LayoutGrid, BarChart2, Sparkles, UserCog, CreditCard, ShieldCheck, Plug, Scale, Code2, ScrollText, Search, Palette, Shield } from 'lucide-react'
+import { LayoutDashboard, Briefcase, Users, LogOut, LayoutGrid, BarChart2, Sparkles, UserCog, CreditCard, ShieldCheck, Plug, Scale, Code2, ScrollText, Search, Palette, Shield, Menu, X } from 'lucide-react'
 import api from '../api/client'
 import { useT } from '../i18n'
 import Logo from './Logo'
@@ -17,11 +17,15 @@ export default function Layout() {
   const { t } = useT()
   const [isSuperadmin, setIsSuperadmin] = useState(false)
   const [brand, setBrand] = useState(null)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     api.get('/billing/me').then(r => setIsSuperadmin(!!r.data?.is_superadmin)).catch(() => {})
     api.get('/branding').then(r => setBrand(r.data)).catch(() => {})
   }, [])
+
+  // Close mobile drawer on route change
+  useEffect(() => { setSidebarOpen(false) }, [location.pathname])
 
   const navItems = [
     { to: '/',           icon: LayoutDashboard, label: t('nav.dashboard'), end: true },
@@ -48,8 +52,33 @@ export default function Layout() {
     <div className="flex h-screen bg-canvas">
       <AnimatedBackground variant="app" />
       <CommandPalette />
-      <aside className="relative z-10 w-64 bg-surface/85 backdrop-blur-xl border-r border-line flex flex-col">
+
+      {/* Mobile top bar with hamburger */}
+      <div className="md:hidden fixed top-0 inset-x-0 z-30 h-14 flex items-center gap-3 px-4 bg-surface/90 backdrop-blur-xl border-b border-line">
+        <button onClick={() => setSidebarOpen(true)} className="p-2 -ml-2 rounded-lg text-muted hover:bg-surface-muted" aria-label="Menu">
+          <Menu className="w-5 h-5" />
+        </button>
+        <div
+          className="w-7 h-7 bg-[#0b1e3f] rounded-lg flex items-center justify-center overflow-hidden"
+          style={brand?.enabled && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(brand?.color || '') ? { backgroundColor: brand.color } : undefined}
+        >
+          {brand?.enabled && brand?.logo_url
+            ? <img src={brand.logo_url} alt="" className="w-full h-full object-contain" />
+            : <Logo className="w-5 h-5" title="HireLens" />}
+        </div>
+        <p className="text-sm font-bold text-content">{brand?.enabled && brand?.name ? brand.name : 'HireLens'}</p>
+      </div>
+
+      {/* Backdrop for mobile drawer */}
+      {sidebarOpen && (
+        <div className="md:hidden fixed inset-0 z-40 bg-black/50" onClick={() => setSidebarOpen(false)} />
+      )}
+
+      <aside className={`fixed md:relative inset-y-0 left-0 z-50 md:z-10 w-64 bg-surface/85 backdrop-blur-xl border-r border-line flex flex-col transform transition-transform duration-200 md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="px-6 py-5 border-b border-line">
+          <button onClick={() => setSidebarOpen(false)} className="md:hidden absolute top-4 right-3 p-2 rounded-lg text-muted hover:bg-surface-muted" aria-label="Close">
+            <X className="w-5 h-5" />
+          </button>
           <div className="flex items-center gap-3">
             <div
               className="w-9 h-9 bg-[#0b1e3f] rounded-xl flex items-center justify-center overflow-hidden"
@@ -78,6 +107,7 @@ export default function Layout() {
           {navItems.map(({ to, icon: Icon, label, end }) => (
             <NavLink
               key={to} to={to} end={end}
+              onClick={() => setSidebarOpen(false)}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive ? 'bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300' : 'text-muted hover:bg-surface-muted hover:text-content'
@@ -111,7 +141,7 @@ export default function Layout() {
         </div>
       </aside>
 
-      <main className="relative z-10 flex-1 overflow-auto">
+      <main className="relative z-10 flex-1 overflow-auto pt-14 md:pt-0">
         <div key={location.pathname} className="animate-fade-in">
           <Outlet />
         </div>
