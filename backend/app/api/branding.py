@@ -5,8 +5,11 @@
 """
 import logging
 import re
+import secrets
+from pathlib import Path
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, field_validator
 from sqlalchemy.orm import Session
 
@@ -111,6 +114,71 @@ def update_branding(
         **actor_fields(actor),
     )
     return _to_out(company)
+
+
+LOGO_DIR = Path("uploads/branding")
+_ALLOWED_LOGO_EXT = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"}
+MAX_LOGO_BYTES = 2 * 1024 * 1024
+
+
+def _valid_image(ext: str, data: bytes) -> bool:
+    if ext == ".png":
+        return data[:8] == b"\x89PNG\r\n\x1a\n"
+    if ext in (".jpg", ".jpeg"):
+        return data[:3] == b"\xff\xd8\xff"
+    if ext == ".gif":
+        return data[:6] in (b"GIF87a", b"GIF89a")
+    if ext == ".webp":
+        return data[:4] == b"RIFF" and data[8:12] == b"WEBP"
+    if ext == ".svg":
+        head = data[:1024].lstrip().lower()
+        return b"<svg" in head or head.startswith(b"<?xml")
+    return False
+
+
+@router.post("/logo", response_model=BrandingOut, summary="Загрузить файл логотипа")
+async def upload_logo(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    actor: CurrentActor = Depends(require_admin),
+):
+    """Загружает изображение логотипа (PNG/JPG/WEBP/GIF/SVG, до 2 MB) и сохраняет ссылку. Только admin."""
+    company = actor.company
+    filename = file.filename or ""
+    ext = ("." + filename.rsplit(".", 1)[-1].lower()) if "." in filename else ""
+    if ext not in _ALLOWED_LOGO_EXT:
+        raise HTTPException(status_code=422, detail="Формат не поддерживается: используйте PNG, JPG, WEBP, GIF или SVG")
+    data = await file.read()
+    if len(data) > MAX_LOGO_BYTES:
+        raise HTTPException(status_code=413, detail="Файл слишком большой (макс. 2 MB)")
+    if not _valid_image(ext, data):
+        raise HTTPException(status_code=422, detail="Файл не является корректным изображением")
+    LOGO_DIR.mkdir(parents=True, exist_ok=True)
+    fname = f"{company.id}_{secrets.token_hex(8)}{ext}"
+    (LOGO_DIR / fname).write_bytes(data)
+    company.brand_logo_url = f"/api/branding/logo/{fname}"
+    db.commit()
+    db.refresh(company)
+    record_audit(
+        db,
+        company_id=company.id,
+        action="branding.logo_upload",
+        detail={"file": fname},
+        **actor_fields(actor),
+    )
+    return _to_out(company)
+
+
+@router.get("/logo/{filename}", summary="Логотип компании (публично)")
+def get_logo(filename: str):
+    """Публичная раздача файла логотипа (для страниц кандидата)."""
+    safe = Path(filename).name
+    if safe != filename:
+        raise HTTPException(status_code=400, detail="Некорректное имя файла")
+    path = LOGO_DIR / safe
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Логотип не найден")
+    return FileResponse(path)
 
 
 @router.get("/public/{company_id}", response_model=BrandingOut)

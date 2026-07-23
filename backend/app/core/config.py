@@ -49,6 +49,8 @@ class Settings:
     # max — жёсткий потолок (детерминированно завершаем интервью, анти cost-DoS/runaway).
     INTERVIEW_MIN_QUESTIONS: int = int(os.getenv("INTERVIEW_MIN_QUESTIONS", "5"))
     INTERVIEW_MAX_QUESTIONS: int = int(os.getenv("INTERVIEW_MAX_QUESTIONS", "8"))
+    # Жёсткий лимит длительности интервью в минутах (pilot feedback: Dinara). 0 = без лимита.
+    INTERVIEW_TIME_LIMIT_MINUTES: int = int(os.getenv("INTERVIEW_TIME_LIMIT_MINUTES", "30"))
     # Telegram бот для HR уведомлений (старый)
     TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
     TELEGRAM_BOT_USERNAME: str = os.getenv("TELEGRAM_BOT_USERNAME", "")  # без @, для deep-link кнопки

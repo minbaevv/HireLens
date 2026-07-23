@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Palette, Save, Check } from 'lucide-react'
+import { Palette, Save, Check, Upload } from 'lucide-react'
 import api from '../api/client'
 import { useT } from '../i18n'
 
@@ -13,6 +13,7 @@ export default function BrandingPage() {
   const [color, setColor] = useState('#2563EB')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [msg, setMsg] = useState(null)
 
   useEffect(() => {
@@ -43,6 +44,26 @@ export default function BrandingPage() {
       setMsg({ ok: false, text: e.response?.data?.detail || t('branding.saveError') })
     } finally {
       setSaving(false)
+    }
+  }
+
+  const uploadLogo = async (e) => {
+    const f = e.target.files?.[0]
+    if (!f) return
+    setUploading(true)
+    setMsg(null)
+    try {
+      const fd = new FormData()
+      fd.append('file', f)
+      const r = await api.post('/branding/logo', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+      setLogoUrl(r.data.logo_url || '')
+      if (!enabled) setEnabled(true)
+      setMsg({ ok: true, text: t('branding.logoUploaded') })
+    } catch (e) {
+      setMsg({ ok: false, text: e.response?.data?.detail || t('branding.saveError') })
+    } finally {
+      setUploading(false)
+      e.target.value = ''
     }
   }
 
@@ -80,6 +101,12 @@ export default function BrandingPage() {
             <div>
               <label className="block text-xs text-muted mb-1">{t('branding.logoUrl')}</label>
               <input value={logoUrl} onChange={e => setLogoUrl(e.target.value)} placeholder="https://…/logo.png" className="input w-full" />
+              <div className="mt-2">
+                <label className="inline-flex items-center gap-2 cursor-pointer text-sm px-3 py-1.5 rounded-lg border border-line text-content hover:bg-surface-muted">
+                  <Upload className="w-4 h-4" /> {uploading ? '…' : t('branding.uploadLogo')}
+                  <input type="file" accept="image/*" className="hidden" onChange={uploadLogo} disabled={uploading} />
+                </label>
+              </div>
               <p className="text-xs text-faint mt-1">{t('branding.logoHint')}</p>
             </div>
 

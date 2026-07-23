@@ -30,6 +30,10 @@ from app.models.models import (
 logger = logging.getLogger(__name__)
 
 INTERVIEW_COMPLETE_MARKER = "[INTERVIEW_COMPLETE]"
+INTERVIEW_TIMEOUT_MESSAGE = (
+    "Время интервью истекло. Спасибо за ваши ответы — на этом интервью завершено, "
+    "рекрутер свяжется с вами по результатам."
+)
 
 # Поддерживаемые форматы аудио для Whisper
 ALLOWED_AUDIO_TYPES = {
@@ -263,7 +267,7 @@ def _build_system_prompt(candidate: Candidate, db: "Session" = None) -> str:
         min_questions=settings.INTERVIEW_MIN_QUESTIONS,
         max_questions=settings.INTERVIEW_MAX_QUESTIONS,
     )
-    return system + _interview_directives_block() + _mandatory_questions_block(job)
+    return system + _interview_directives_block() + _known_candidate_block(candidate) + _mandatory_questions_block(job)
 
 
 def pre_screen_resume(candidate: "Candidate", db: "Session") -> None:
@@ -357,7 +361,78 @@ def start_interview(candidate_id: int, db: Session) -> dict:
         "access_token": interview.access_token,  # SEC-1
         "message": ai_text,
         "is_complete": False,
+        "seconds_remaining": _seconds_remaining(interview),
     }
+
+
+def _known_candidate_block(candidate) -> str:
+    """Данные кандидата из формы отклика (pilot feedback: Dinara).
+
+    Кандидат уже указал имя/email/телефон ДО интервью, поэтому интервьюер
+    не должен спрашивать их заново. Присоединяется ПОСЛЕ форматинга (не меняет промпт).
+    """
+    name = (getattr(candidate, "name", None) or "").strip()
+    email = (getattr(candidate, "email", None) or "").strip()
+    phone = (getattr(candidate, "phone", None) or "").strip()
+    have = [label for label, val in (("name", name), ("email", email), ("phone", phone)) if val]
+    if not have:
+        return ""
+    block = (
+        "\n\nKNOWN CANDIDATE DETAILS: the candidate ALREADY filled these in the application "
+        "form BEFORE the interview: " + ", ".join(have) + ". Do NOT ask for their name, email "
+        "or phone number during the interview \u2014 you already have them, asking again is a bug. "
+        "Never ask a question whose answer is already listed here."
+    )
+    if name:
+        first = name.split()[0]
+        block += (
+            " The candidate's first name is given below as data; greet them by it naturally.\n"
+            + wrap_untrusted(first)
+        )
+    return block
+
+
+def _seconds_remaining(interview) -> int | None:
+    """Сколько секунд осталось до лимита (None — лимит выкл/нет старта)."""
+    limit = getattr(settings, "INTERVIEW_TIME_LIMIT_MINUTES", 0) or 0
+    started = getattr(interview, "started_at", None)
+    if limit <= 0 or not started:
+        return None
+    from datetime import datetime, UTC, timedelta
+    if started.tzinfo is None:
+        started = started.replace(tzinfo=UTC)
+    remaining = (started + timedelta(minutes=limit) - datetime.now(UTC)).total_seconds()
+    return max(0, int(remaining))
+
+
+def _interview_expired(interview) -> bool:
+    rem = _seconds_remaining(interview)
+    return rem is not None and rem <= 0
+
+
+def _finalize_interview(interview, db, closing_text: str, background_tasks=None) -> dict:
+    """Завершает интервью: закрывающее сообщение + скоринг."""
+    from datetime import datetime, UTC
+    ai_msg = Message(interview_id=interview.id, role=MessageRole.ai, content=closing_text)
+    db.add(ai_msg)
+    interview.status = InterviewStatus.completed
+    interview.finished_at = datetime.now(UTC)
+    db.commit()
+    if background_tasks is not None:
+        background_tasks.add_task(_run_scoring_task, interview.id)
+    else:
+        _run_scoring(interview, db)
+    return {"interview_id": interview.id, "message": closing_text, "is_complete": True}
+
+
+def finish_interview(interview_id: int, db: Session, background_tasks=None) -> dict:
+    """Принудительно завершает интервью (истёк лимит времени). Идемпотентно."""
+    interview = db.query(Interview).filter(Interview.id == interview_id).first()
+    if not interview:
+        raise ValueError(f"Интервью #{interview_id} не найдено")
+    if interview.status != InterviewStatus.in_progress:
+        return {"interview_id": interview_id, "message": "", "is_complete": True}
+    return _finalize_interview(interview, db, INTERVIEW_TIMEOUT_MESSAGE, background_tasks)
 
 
 def send_message(
@@ -376,6 +451,10 @@ def send_message(
         raise ValueError(f"Интервью #{interview_id} не найдено")
     if interview.status != InterviewStatus.in_progress:
         raise ValueError("Интервью уже завершено")
+
+    # Жёсткий лимит по времени: если истёк — завершаем немедленно (pilot: Dinara).
+    if _interview_expired(interview):
+        return _finalize_interview(interview, db, INTERVIEW_TIMEOUT_MESSAGE, background_tasks)
 
     # Сохраняем ответ пользователя
     user_msg = Message(interview_id=interview_id, role=MessageRole.user, content=user_text)

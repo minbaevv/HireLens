@@ -50,6 +50,7 @@ class InterviewStartResponse(BaseModel):
     access_token: str  # SEC-1: кандидат использует его для всех запросов к интервью
     message: str
     is_complete: bool
+    seconds_remaining: Optional[int] = None
 
 
 class MessageRequest(BaseModel):
@@ -78,6 +79,7 @@ class InterviewOut(BaseModel):
     candidate_id: int
     status: InterviewStatus
     messages: List[MessageOut] = []
+    seconds_remaining: Optional[int] = None
 
 
 # ---------------------------------------------------------------------------
@@ -132,6 +134,27 @@ def message(
     except RuntimeError as e:
         logger.error(f"Groq API ошибка: {e}")
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="AI сервис недоступен")
+
+
+@router.post(
+    "/{interview_id}/finish",
+    response_model=MessageResponse,
+    summary="Завершить интервью (истёк лимит времени)",
+)
+def finish(
+    interview_id: int,
+    background_tasks: BackgroundTasks,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Принудительное завершение (лимит времени). Требует X-Interview-Token (SEC-1)."""
+    _get_interview_by_token(interview_id, request, db)
+    from app.ai.interview_service import finish_interview
+    try:
+        result = finish_interview(interview_id, db, background_tasks)
+        return MessageResponse(**result)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.post(
@@ -313,11 +336,13 @@ def get_interview(
         .order_by(Message.id)
         .all()
     )
+    from app.ai.interview_service import _seconds_remaining
     return InterviewOut(
         id=interview.id,
         candidate_id=interview.candidate_id,
         status=interview.status,
         messages=[MessageOut.model_validate(m) for m in messages],
+        seconds_remaining=_seconds_remaining(interview),
     )
 
 

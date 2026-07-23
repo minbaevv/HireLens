@@ -40,6 +40,10 @@ export default function InterviewPage() {
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [done, setDone] = useState(false)
+  const [remaining, setRemaining] = useState(null)
+  const [timerOn, setTimerOn] = useState(false)
+  const deadlineRef = useRef(null)
+  const finishedRef = useRef(false)
   const bottomRef = useRef(null)
 
   // Голосовая запись
@@ -49,13 +53,22 @@ export default function InterviewPage() {
   const audioChunksRef = useRef([])
 
   useEffect(() => {
+    const armTimer = (secs) => {
+      if (typeof secs === 'number') {
+        deadlineRef.current = Date.now() + secs * 1000
+        setRemaining(secs)
+        setTimerOn(true)
+      }
+    }
     const first = location.state?.firstMessage
     if (first) {
       setMessages([{ role: 'ai', content: first }])
+      armTimer(location.state?.secondsRemaining)
     } else {
       axios.get(`/api/interviews/${interviewId}`, { headers: authHeaders }).then(r => {
         setMessages(r.data.messages)
         if (r.data.status === 'completed') setDone(true)
+        else armTimer(r.data.seconds_remaining)
       })
     }
   }, [interviewId])
@@ -63,6 +76,25 @@ export default function InterviewPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // Лимит времени интервью: обратный отсчёт и авто-завершение.
+  useEffect(() => {
+    if (!timerOn || done || deadlineRef.current == null) return
+    const tick = () => {
+      const left = Math.max(0, Math.round((deadlineRef.current - Date.now()) / 1000))
+      setRemaining(left)
+      if (left <= 0 && !finishedRef.current) {
+        finishedRef.current = true
+        axios.post(`/api/interviews/${interviewId}/finish`, {}, { headers: authHeaders })
+          .then(r => { if (r.data?.message) setMessages(m => [...m, { role: 'ai', content: r.data.message }]) })
+          .catch(() => {})
+          .finally(() => setDone(true))
+      }
+    }
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [timerOn, done, interviewId])
 
   async function startRecording() {
     try {
@@ -158,6 +190,11 @@ export default function InterviewPage() {
             <div className="hidden sm:flex items-center gap-1.5 text-green-600 text-sm font-medium">
               <CheckCircle className="w-4 h-4" /> {t('status.completed')}
             </div>
+          )}
+          {!done && remaining != null && (
+            <span className={`text-xs font-semibold tabular-nums px-2 py-1 rounded-lg ${remaining <= 60 ? 'text-red-600 bg-red-50 dark:bg-red-500/10' : 'text-muted bg-surface-muted'}`}>
+              {String(Math.floor(remaining / 60)).padStart(2, '0')}:{String(remaining % 60).padStart(2, '0')}
+            </span>
           )}
           <InstallPrompt />
           <LanguageSwitcher alignRight />
