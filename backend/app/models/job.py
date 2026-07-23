@@ -20,6 +20,9 @@ class Job(Base):
     # Priority 2: настраиваемые веса критериев скоринга (JSON или NULL = равные)
     # Формат: {"technical": 0.4, "soft": 0.2, "experience": 0.3, "motivation": 0.1}
     scoring_weights = Column(Text, nullable=True)
+    # Обязательные (предварительные) вопросы рекрутёра (JSON-массив строк или NULL).
+    # AI обязан задать их в интервью в дополнение к адаптивным (pilot feedback: Dinara).
+    mandatory_questions = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, server_default=func.now())
 

@@ -16,6 +16,17 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
 
+def _clean_questions(questions) -> str | None:
+    """Нормализует список обязательных вопросов → JSON-строка или None.
+
+    Убирает пустые, обрезает длину (500 симв.) и количество (20 шт.).
+    """
+    if not questions:
+        return None
+    cleaned = [q.strip()[:500] for q in questions if isinstance(q, str) and q.strip()][:20]
+    return json.dumps(cleaned, ensure_ascii=False) if cleaned else None
+
+
 def _get_owned_job_or_404(job_id: int, company: Company, db: Session) -> Job:
     job = db.query(Job).filter(Job.id == job_id, Job.company_id == company.id).first()
     if job is None:
@@ -40,6 +51,7 @@ def create_job(
         requirements=data.requirements,
         language=data.language,
         scoring_weights=json.dumps(data.scoring_weights) if data.scoring_weights else None,
+        mandatory_questions=_clean_questions(data.mandatory_questions),
     )
     db.add(job)
     db.commit()
@@ -88,6 +100,9 @@ def update_job(
     if "scoring_weights" in update_data:
         sw = update_data.pop("scoring_weights")
         job.scoring_weights = json.dumps(sw) if sw else None
+    if "mandatory_questions" in update_data:
+        mq = update_data.pop("mandatory_questions")
+        job.mandatory_questions = _clean_questions(mq)
     for field, value in update_data.items():
         setattr(job, field, value)
 

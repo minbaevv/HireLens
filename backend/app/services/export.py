@@ -39,7 +39,7 @@ def _tags_str(raw) -> str:
 
 # Общий набор колонок для табличного экспорта (CSV/Excel)
 _EXPORT_HEADERS = [
-    "ID", "Имя", "Email", "Статус", "Оценка",
+    "ID", "Имя", "Email", "Телефон", "Статус", "Оценка",
     "Пре-скрин", "Рекомендация", "Теги", "Вакансия ID", "Дата подачи",
 ]
 
@@ -50,6 +50,7 @@ def _row_values(c) -> list:
         c.id,
         c.name,
         c.email,
+        getattr(c, "phone", None) or "",
         c.status.value if hasattr(c.status, "value") else str(c.status),
         f"{c.score:.1f}" if c.score is not None else "",
         f"{c.pre_score:.0f}" if getattr(c, "pre_score", None) is not None else "",
@@ -95,19 +96,20 @@ def generate_candidates_xlsx(candidates: list) -> bytes:
     for c in candidates:
         row = _row_values(c)
         # Оценка и пре-скрин — числами, чтобы Excel корректно сортировал
-        if row[4] != "":
-            try:
-                row[4] = float(row[4])
-            except Exception:
-                pass
+        # (индексы сдвинуты на +1 после добавления колонки «Телефон»)
         if row[5] != "":
             try:
-                row[5] = int(float(row[5]))
+                row[5] = float(row[5])
+            except Exception:
+                pass
+        if row[6] != "":
+            try:
+                row[6] = int(float(row[6]))
             except Exception:
                 pass
         ws.append(row)
 
-    widths = [6, 24, 30, 14, 8, 10, 16, 26, 12, 18]
+    widths = [6, 24, 30, 18, 14, 8, 10, 16, 26, 12, 18]
     for i, w in enumerate(widths, 1):
         ws.column_dimensions[get_column_letter(i)].width = w
     ws.freeze_panes = "A2"
@@ -232,6 +234,7 @@ def generate_candidate_pdf(candidate, job_title: str, messages: list = None) -> 
     info_data = [
         ["Кандидат:", candidate.name],
         ["Email:", candidate.email],
+        ["Телефон:", getattr(candidate, "phone", None) or "—"],
         ["Вакансия:", job_title],
         ["Статус:", candidate.status.value.upper()],
         ["Дата:", _local_dt(candidate.created_at).strftime("%d.%m.%Y") if candidate.created_at else "—"],

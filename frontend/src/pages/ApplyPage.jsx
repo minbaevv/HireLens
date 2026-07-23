@@ -15,7 +15,7 @@ export default function ApplyPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
-  const [form, setForm] = useState({ name: '', email: '', resume_text: '' })
+  const [form, setForm] = useState({ name: '', email: '', phone: '', resume_text: '' })
   const [file, setFile] = useState(null)
   const [useFile, setUseFile] = useState(false)
 
@@ -39,6 +39,7 @@ export default function ApplyPage() {
       const fd = new FormData()
       fd.append('name', form.name)
       fd.append('email', form.email)
+      if (form.phone) fd.append('phone', form.phone)
       if (useFile && file) fd.append('resume_file', file)
       else if (form.resume_text) fd.append('resume_text', form.resume_text)
       const { data } = await axios.post(`/api/apply/${token}`, fd)
@@ -94,6 +95,12 @@ export default function ApplyPage() {
               <label className="block text-sm font-medium text-content mb-1.5">Email</label>
               <input type="email" className="input" placeholder="ivan@example.com"
                 value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-content mb-1.5">{t('apply.phone')}</label>
+              <input type="tel" className="input" placeholder={t('apply.phonePlaceholder')}
+                value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
+              <p className="text-xs text-faint mt-1">{t('apply.phoneHint')}</p>
             </div>
             <div>
               <div className="flex items-center gap-4 mb-3">

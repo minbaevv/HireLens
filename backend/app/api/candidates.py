@@ -143,6 +143,7 @@ def apply_to_job(
     token: str,
     name: str = Form(..., min_length=1, max_length=255),
     email: str = Form(...),
+    phone: Optional[str] = Form(default=None, max_length=32),
     resume_text: Optional[str] = Form(default=None),
     resume_file: Optional[UploadFile] = File(default=None),
     db: Session = Depends(get_db),
@@ -212,6 +213,7 @@ def apply_to_job(
         job_id=job.id,
         name=name,
         email=email,
+        phone=(phone.strip() if phone and phone.strip() else None),
         resume_text=final_resume_text,
         status=CandidateStatus.applied,
     )

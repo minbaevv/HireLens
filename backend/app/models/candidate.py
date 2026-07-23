@@ -21,6 +21,7 @@ class Candidate(Base):
     job_id = Column(Integer, ForeignKey("jobs.id"), nullable=False)
     name = Column(String(255), nullable=False)
     email = Column(String(255), nullable=False, index=True)
+    phone = Column(String(32), nullable=True)  # WhatsApp/телефон кандидата (pilot feedback: Dinara)
     resume_text = Column(Text, nullable=True)
     status = Column(Enum(CandidateStatus), default=CandidateStatus.applied, nullable=False)
     score = Column(Float, nullable=True)

@@ -26,8 +26,8 @@ function JobModal({ job, onClose, onSaved }) {
   const isEdit = !!job
   const initialWeights = job && job.scoring_weights ? job.scoring_weights : null
   const [form, setForm] = useState(
-    job ? { title: job.title, description: job.description, requirements: job.requirements, scoring_weights: initialWeights }
-        : { title: '', description: '', requirements: '', scoring_weights: null }
+    job ? { title: job.title, description: job.description, requirements: job.requirements, mandatory_questions: job.mandatory_questions || [], scoring_weights: initialWeights }
+        : { title: '', description: '', requirements: '', mandatory_questions: [], scoring_weights: null }
   )
   const [profile, setProfile] = useState(matchWeightProfile(initialWeights))
   const [loading, setLoading] = useState(false)
@@ -47,12 +47,32 @@ function JobModal({ job, onClose, onSaved }) {
     setForm(f => ({ ...f, scoring_weights: { ...(f.scoring_weights || DEFAULT_CUSTOM_WEIGHTS), [key]: n } }))
   }
 
+  function addQuestion() {
+    setForm(f => ({ ...f, mandatory_questions: [...(f.mandatory_questions || []), ''] }))
+  }
+
+  function setQuestion(i, value) {
+    setForm(f => {
+      const arr = [...(f.mandatory_questions || [])]
+      arr[i] = value
+      return { ...f, mandatory_questions: arr }
+    })
+  }
+
+  function removeQuestion(i) {
+    setForm(f => ({ ...f, mandatory_questions: (f.mandatory_questions || []).filter((_, idx) => idx !== i) }))
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     setLoading(true)
     setError('')
     try {
-      isEdit ? await api.patch(`/jobs/${job.id}`, form) : await api.post('/jobs', form)
+      const payload = {
+        ...form,
+        mandatory_questions: (form.mandatory_questions || []).map(q => q.trim()).filter(Boolean),
+      }
+      isEdit ? await api.patch(`/jobs/${job.id}`, payload) : await api.post('/jobs', payload)
       onSaved()
     } catch (err) {
       setError(err.response?.data?.detail || t('jobs.genericError'))
@@ -79,6 +99,27 @@ function JobModal({ job, onClose, onSaved }) {
           <div>
             <label className="block text-sm font-medium text-content mb-1.5">{t('jobs.fieldRequirements')}</label>
             <textarea className="input min-h-[80px] resize-none" value={form.requirements} onChange={e => setForm(f => ({ ...f, requirements: e.target.value }))} required />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-content mb-1.5">{t('jobs.mandatoryQuestions')}</label>
+            <p className="text-xs text-faint mb-2">{t('jobs.mandatoryQuestionsHint')}</p>
+            <div className="space-y-2">
+              {(form.mandatory_questions || []).map((q, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input className="input flex-1 text-sm" value={q}
+                    onChange={e => setQuestion(i, e.target.value)}
+                    placeholder={t('jobs.mandatoryQuestionPlaceholder')} />
+                  <button type="button" onClick={() => removeQuestion(i)}
+                    className="text-faint hover:text-red-600 p-1" title={t('jobs.removeQuestion')}>
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button type="button" onClick={addQuestion}
+              className="mt-2 inline-flex items-center gap-1 text-sm text-brand-600 hover:text-brand-700 font-medium">
+              <Plus className="w-4 h-4" /> {t('jobs.addMandatoryQuestion')}
+            </button>
           </div>
           <div>
             <label className="block text-sm font-medium text-content mb-1.5">{t('jobs.weightsLabel')}</label>

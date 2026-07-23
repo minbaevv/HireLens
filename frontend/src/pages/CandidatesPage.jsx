@@ -373,6 +373,7 @@ export default function CandidatesPage() {
                         <div>
                           <p className="text-sm font-medium text-content">{c.name}</p>
                           <p className="text-xs text-faint">{c.email}</p>
+                          {c.phone && <p className="text-xs text-faint">{c.phone}</p>}
                           {Array.isArray(c.tags) && c.tags.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1">
                               {c.tags.map(tg => (

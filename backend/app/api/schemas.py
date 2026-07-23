@@ -42,6 +42,8 @@ class JobCreate(BaseModel):
     requirements: str = Field(min_length=1)
     language: str = Field(default="ru", pattern=LANGUAGE_PATTERN)
     scoring_weights: Optional[dict] = None  # Priority 2
+    # Обязательные вопросы рекрутёра (pilot feedback: Dinara)
+    mandatory_questions: Optional[list[str]] = Field(default=None, max_length=20)
 
 
 class JobUpdate(BaseModel):
@@ -51,6 +53,7 @@ class JobUpdate(BaseModel):
     language: Optional[str] = Field(default=None, pattern=LANGUAGE_PATTERN)
     is_active: Optional[bool] = None
     scoring_weights: Optional[dict] = None
+    mandatory_questions: Optional[list[str]] = Field(default=None, max_length=20)
 
 
 class JobOut(BaseModel):
@@ -67,6 +70,7 @@ class JobOut(BaseModel):
     created_at: datetime
     apply_link: str = ""
     scoring_weights: Optional[dict] = None
+    mandatory_questions: list[str] = []
 
     @field_validator("scoring_weights", mode="before")
     @classmethod
@@ -77,6 +81,17 @@ class JobOut(BaseModel):
             except (ValueError, TypeError):
                 return None
         return v
+
+    @field_validator("mandatory_questions", mode="before")
+    @classmethod
+    def _parse_mandatory_questions(cls, v):
+        if isinstance(v, str):
+            try:
+                parsed = json.loads(v)
+                return parsed if isinstance(parsed, list) else []
+            except (ValueError, TypeError):
+                return []
+        return v or []
 
     @classmethod
     def from_job(cls, job, frontend_url: str) -> "JobOut":
@@ -101,6 +116,7 @@ class CandidateApply(BaseModel):
     """Форма подачи заявки кандидатом."""
     name: str = Field(min_length=1, max_length=255)
     email: EmailStr
+    phone: Optional[str] = Field(default=None, max_length=32)
     resume_text: Optional[str] = Field(default=None, min_length=1)
 
 
@@ -111,6 +127,7 @@ class CandidateOut(BaseModel):
     job_id: int
     name: str
     email: EmailStr
+    phone: Optional[str] = None
     resume_text: Optional[str]
     status: CandidateStatus
     score: Optional[float]
@@ -188,6 +205,7 @@ class CandidateListItem(BaseModel):
     id: int
     name: str
     email: EmailStr
+    phone: Optional[str] = None
     status: CandidateStatus
     score: Optional[float]
     pre_score: Optional[float]

@@ -192,6 +192,36 @@ def _normalize_red_flags(raw) -> list:
     return result
 
 
+def _mandatory_questions_block(job) -> str:
+    """Блок с обязательными вопросами рекрутёра (pilot feedback: Dinara).
+
+    Вопросы задаёт рекрутёр (доверенный источник), поэтому передаются
+    как инструкция интервьюеру: их нужно обязательно задать в дополнение
+    к адаптивным. Присоединяется ПОСЛЕ форматинга шаблона, чтобы работать
+    даже с кастомными шаблонами компаний (без {плейсхолдеров}).
+    """
+    raw = getattr(job, "mandatory_questions", None)
+    if not raw:
+        return ""
+    try:
+        questions = json.loads(raw) if isinstance(raw, str) else raw
+    except (ValueError, TypeError):
+        return ""
+    questions = [str(q).strip() for q in (questions or []) if str(q).strip()]
+    if not questions:
+        return ""
+    listed = "\n".join(f"{i}. {q}" for i, q in enumerate(questions, 1))
+    return (
+        "\n\nMANDATORY RECRUITER QUESTIONS:\n"
+        "The recruiter requires the following question(s) to be asked during this interview. "
+        "You MUST ask each of them explicitly (rephrasing for a natural tone is fine), in ADDITION "
+        "to your own adaptive questions. Ask them early, one at a time, and do not skip any. "
+        "They count on top of your adaptive questions, so you may go up to the maximum question "
+        "limit to make sure every one of them is asked:\n"
+        f"{listed}"
+    )
+
+
 def _build_system_prompt(candidate: Candidate, db: "Session" = None) -> str:
     """Cтроит системный промпт для интервью.
 
@@ -201,7 +231,7 @@ def _build_system_prompt(candidate: Candidate, db: "Session" = None) -> str:
     job = candidate.job
     resume = candidate.resume_text or NO_RESUME_PLACEHOLDER
     template = prompt_service.resolve_prompt(db, getattr(job, "company_id", None), "interview_system")
-    return template.format(
+    system = template.format(
         data_handling_rule=DATA_HANDLING_RULE,
         job_title=job.title,
         job_requirements=job.requirements,
@@ -210,6 +240,7 @@ def _build_system_prompt(candidate: Candidate, db: "Session" = None) -> str:
         min_questions=settings.INTERVIEW_MIN_QUESTIONS,
         max_questions=settings.INTERVIEW_MAX_QUESTIONS,
     )
+    return system + _mandatory_questions_block(job)
 
 
 def pre_screen_resume(candidate: "Candidate", db: "Session") -> None:

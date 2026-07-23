@@ -156,6 +156,13 @@ export default function CandidateDetailPage() {
           <div>
             <h1 className="text-xl font-bold text-content">{candidate.name}</h1>
             <p className="text-muted text-sm mt-0.5">{candidate.email}</p>
+            {candidate.phone && (
+              <p className="text-muted text-sm mt-0.5">
+                <a href={`https://wa.me/${candidate.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="hover:text-brand-600 hover:underline">
+                  {candidate.phone}
+                </a>
+              </p>
+            )}
             <div className="flex items-center gap-3 mt-3">
               <StatusBadge status={candidate.status} />
               <RecommendationBadge value={candidate.recommendation} />
