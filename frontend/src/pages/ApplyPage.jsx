@@ -70,9 +70,6 @@ export default function ApplyPage() {
     <div className="min-h-screen bg-canvas flex items-center justify-center p-4">
       <AnimatedBackground variant="auth" />
       <div className="relative z-10 w-full max-w-lg">
-        <div className="flex justify-end mb-3">
-          <LanguageSwitcher />
-        </div>
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 bg-brand-600 rounded-2xl mb-4 shadow-lg">
             <Bot className="w-7 h-7 text-white" />
@@ -133,6 +130,9 @@ export default function ApplyPage() {
               {submitting ? <><Spinner size="sm" /> {t('apply.submitting')}</> : t('apply.submit')}
             </button>
           </form>
+        </div>
+        <div className="flex justify-center mt-6">
+          <LanguageSwitcher />
         </div>
       </div>
     </div>
