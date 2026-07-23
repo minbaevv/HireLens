@@ -18,10 +18,11 @@ export default function Layout() {
   const [isSuperadmin, setIsSuperadmin] = useState(false)
   const [brand, setBrand] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [logoError, setLogoError] = useState(false)
 
   useEffect(() => {
     api.get('/billing/me').then(r => setIsSuperadmin(!!r.data?.is_superadmin)).catch(() => {})
-    api.get('/branding').then(r => setBrand(r.data)).catch(() => {})
+    api.get('/branding').then(r => { setBrand(r.data); setLogoError(false) }).catch(() => {})
   }, [])
 
   // Close mobile drawer on route change
@@ -48,6 +49,8 @@ export default function Layout() {
     navItems.push({ to: '/admin', icon: ShieldCheck, label: t('nav.admin') })
   }
 
+  const showCustomLogo = !!(brand?.enabled && brand?.logo_url && !logoError)
+
   return (
     <div className="flex h-screen bg-canvas">
       <AnimatedBackground variant="app" />
@@ -60,10 +63,10 @@ export default function Layout() {
         </button>
         <div
           className="w-7 h-7 bg-[#0b1e3f] rounded-lg flex items-center justify-center overflow-hidden"
-          style={brand?.enabled && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(brand?.color || '') ? { backgroundColor: brand.color } : undefined}
+          style={showCustomLogo && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(brand?.color || '') ? { backgroundColor: brand.color } : undefined}
         >
-          {brand?.enabled && brand?.logo_url
-            ? <img src={brand.logo_url} alt="" className="w-full h-full object-contain" />
+          {showCustomLogo
+            ? <img src={brand.logo_url} alt="" className="w-full h-full object-contain" onError={() => setLogoError(true)} />
             : <Logo className="w-5 h-5" title="HireLens" />}
         </div>
         <p className="text-sm font-bold text-content">{brand?.enabled && brand?.name ? brand.name : 'HireLens'}</p>
@@ -82,10 +85,10 @@ export default function Layout() {
           <div className="flex items-center gap-3">
             <div
               className="w-9 h-9 bg-[#0b1e3f] rounded-xl flex items-center justify-center overflow-hidden"
-              style={brand?.enabled && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(brand?.color || '') ? { backgroundColor: brand.color } : undefined}
+              style={showCustomLogo && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(brand?.color || '') ? { backgroundColor: brand.color } : undefined}
             >
-              {brand?.enabled && brand?.logo_url
-                ? <img src={brand.logo_url} alt="" className="w-full h-full object-contain" />
+              {showCustomLogo
+                ? <img src={brand.logo_url} alt="" className="w-full h-full object-contain" onError={() => setLogoError(true)} />
                 : <Logo className="w-6 h-6" title="HireLens" />}
             </div>
             <div>
