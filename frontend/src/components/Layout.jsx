@@ -132,7 +132,7 @@ export default function Layout() {
             </div>
           )}
           <div className="flex items-center justify-between gap-2 px-1 pb-1">
-            <LanguageSwitcher />
+            <LanguageSwitcher dropUp />
             <ThemeSwitcher />
           </div>
           <button

@@ -213,12 +213,35 @@ def _mandatory_questions_block(job) -> str:
     listed = "\n".join(f"{i}. {q}" for i, q in enumerate(questions, 1))
     return (
         "\n\nMANDATORY RECRUITER QUESTIONS:\n"
-        "The recruiter requires the following question(s) to be asked during this interview. "
-        "You MUST ask each of them explicitly (rephrasing for a natural tone is fine), in ADDITION "
-        "to your own adaptive questions. Ask them early, one at a time, and do not skip any. "
-        "They count on top of your adaptive questions, so you may go up to the maximum question "
-        "limit to make sure every one of them is asked:\n"
+        "The recruiter requires that the following topic(s) be covered during this interview. "
+        "You MUST make sure each one is asked, in ADDITION to your own adaptive questions. "
+        "NEVER copy the recruiter's wording verbatim \u2014 always REPHRASE each topic naturally "
+        "in your own words and weave it smoothly into the conversation. Do NOT open the interview "
+        "with them and do NOT dump them all at once: first give your warm greeting and an easy "
+        "opening question, then introduce these naturally, one at a time, across the interview. "
+        "Do not skip any. They count on top of your adaptive questions, so you may go up to the "
+        "maximum question limit to make sure every topic is covered:\n"
         f"{listed}"
+    )
+
+
+def _interview_directives_block() -> str:
+    """Доп. директивы поведения интервьюера (pilot feedback: Dinara).
+
+    Присоединяется ПОСЛЕ форматинга шаблона и НЕ меняет сам промпт —
+    только добавляет правила поверх активного шаблона компании/дефолта.
+    """
+    return (
+        "\n\nADDITIONAL BEHAVIOUR RULES (highest priority, override conflicting style above):\n"
+        "A. Always begin with a short, warm, human greeting and one easy opening question before "
+        "any substantive or recruiter-required question. Sound like a real person, not a form. "
+        "Never paste a question verbatim from any instruction \u2014 rephrase everything in your own "
+        "natural words.\n"
+        "B. STOP ON REQUEST: If the candidate clearly and explicitly asks to stop, end, cancel or "
+        "interrupt the interview (for example: 'прервать интервью', 'закончить интервью', 'стоп', "
+        "'stop the interview', 'end the interview'), you MUST comply IMMEDIATELY. Do NOT argue, do "
+        "NOT ask why, do NOT try to talk them out of it, and do NOT ask another question. Reply with "
+        "one short, polite closing sentence and then, on a NEW line, write exactly: " + INTERVIEW_COMPLETE_MARKER
     )
 
 
@@ -240,7 +263,7 @@ def _build_system_prompt(candidate: Candidate, db: "Session" = None) -> str:
         min_questions=settings.INTERVIEW_MIN_QUESTIONS,
         max_questions=settings.INTERVIEW_MAX_QUESTIONS,
     )
-    return system + _mandatory_questions_block(job)
+    return system + _interview_directives_block() + _mandatory_questions_block(job)
 
 
 def pre_screen_resume(candidate: "Candidate", db: "Session") -> None:

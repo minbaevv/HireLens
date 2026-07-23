@@ -7,6 +7,7 @@ import Spinner from '../components/Spinner'
 import VideoRecorder from '../components/VideoRecorder'
 import { useT } from '../i18n'
 import LanguageSwitcher from '../components/LanguageSwitcher'
+import Logo from '../components/Logo'
 import InstallPrompt from '../components/InstallPrompt'
 
 function Message({ role, content, delay = 0 }) {
@@ -145,8 +146,8 @@ export default function InterviewPage() {
         className="bg-surface border-b border-line px-4 py-3 flex items-center gap-3"
         style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top))' }}
       >
-        <div className="w-9 h-9 bg-brand-600 rounded-xl flex items-center justify-center shrink-0">
-          <Bot className="w-5 h-5 text-white" />
+        <div className="w-9 h-9 bg-surface border border-line rounded-xl flex items-center justify-center shrink-0">
+          <Logo className="w-6 h-6" title="HireLens" />
         </div>
         <div className="min-w-0">
           <p className="text-sm font-semibold text-content truncate">{t('interview.headerTitle')}</p>
@@ -159,7 +160,7 @@ export default function InterviewPage() {
             </div>
           )}
           <InstallPrompt />
-          <LanguageSwitcher />
+          <LanguageSwitcher alignRight />
         </div>
       </div>
 

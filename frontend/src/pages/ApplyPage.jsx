@@ -4,6 +4,7 @@ import axios from 'axios'
 import { Bot, Upload, FileText } from 'lucide-react'
 import Spinner from '../components/Spinner'
 import LanguageSwitcher from '../components/LanguageSwitcher'
+import Logo from '../components/Logo'
 import AnimatedBackground from '../components/AnimatedBackground'
 import { useT } from '../i18n'
 
@@ -72,8 +73,8 @@ export default function ApplyPage() {
       <AnimatedBackground variant="auth" />
       <div className="relative z-10 w-full max-w-lg">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-brand-600 rounded-2xl mb-4 shadow-lg">
-            <Bot className="w-7 h-7 text-white" />
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-surface border border-line rounded-2xl mb-4 shadow-lg">
+            <Logo className="w-9 h-9" title="HireLens" />
           </div>
           <h1 className="text-2xl font-bold text-content">{job.title}</h1>
           <p className="text-muted mt-1">{t('apply.subtitle')}</p>

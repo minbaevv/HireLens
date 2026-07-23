@@ -9,7 +9,7 @@ const LANG_META = {
   en: { label: 'EN', native: 'English' },
 }
 
-export default function LanguageSwitcher() {
+export default function LanguageSwitcher({ dropUp = false, alignRight = false }) {
   const { lang, setLang } = useT()
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
@@ -53,11 +53,11 @@ export default function LanguageSwitcher() {
         </svg>
       </button>
 
-      {/* Список открывается вверх, прямо над кнопкой (переключатель стоит внизу сайдбара). */}
+      {/* Направление раскрытия: вниз по умолчанию, вверх (dropUp) в сайдбаре. */}
       {open && (
         <ul
           role="listbox"
-          className="absolute bottom-full left-0 mb-2 w-44 z-[9999] overflow-hidden rounded-lg border border-line bg-surface shadow-xl animate-fade-in"
+          className={`absolute ${dropUp ? 'bottom-full mb-2' : 'top-full mt-2'} ${alignRight ? 'right-0' : 'left-0'} w-44 z-[9999] overflow-hidden rounded-lg border border-line bg-surface shadow-xl animate-fade-in`}
         >
           {SUPPORTED_LANGS.map((code) => {
             const meta = LANG_META[code] || { label: code, native: code }
