@@ -2,6 +2,7 @@
 import html
 import json
 import logging
+import re
 from datetime import UTC, datetime
 from typing import List, Optional
 
@@ -195,6 +196,34 @@ def apply_job_og(token: str, db: Session = Depends(get_db)) -> HTMLResponse:
     )
     return HTMLResponse(content=doc)
 
+def _normalize_phone(raw):
+    """Приводит телефон к международному формату (KG по умолчанию: +996).
+
+    В Кыргызстане часто пишут местный номер с ведущим 0 (0705121370),
+    из-за чего ссылка wa.me не открывает контакт. Нормализуем в +996XXXXXXXXX.
+    """
+    if not raw:
+        return None
+    s = raw.strip()
+    if not s:
+        return None
+    has_plus = s.startswith("+")
+    digits = re.sub(r"\D", "", s)
+    if not digits:
+        return None
+    if has_plus:
+        return "+" + digits
+    if digits.startswith("00"):
+        return "+" + digits[2:]
+    if digits.startswith("996"):
+        return "+" + digits
+    if digits.startswith("0"):
+        return "+996" + digits.lstrip("0")
+    if len(digits) == 9:
+        return "+996" + digits
+    return "+" + digits
+
+
 @router.post(
     "/{token}",
     response_model=CandidateOut,
@@ -277,7 +306,7 @@ def apply_to_job(
         job_id=job.id,
         name=name,
         email=email,
-        phone=(phone.strip() if phone and phone.strip() else None),
+        phone=_normalize_phone(phone),
         resume_text=final_resume_text,
         status=CandidateStatus.applied,
     )

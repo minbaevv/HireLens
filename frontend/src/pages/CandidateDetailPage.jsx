@@ -158,7 +158,7 @@ export default function CandidateDetailPage() {
             <p className="text-muted text-sm mt-0.5">{candidate.email}</p>
             {candidate.phone && (
               <p className="text-muted text-sm mt-0.5">
-                <a href={`https://wa.me/${candidate.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="hover:text-brand-600 hover:underline">
+                <a href={`https://wa.me/${candidate.phone.replace(/\D/g, '').replace(/^0+/, '996').replace(/^(?!996)(\d{9})$/, '996$1')}`} target="_blank" rel="noopener noreferrer" className="hover:text-brand-600 hover:underline">
                   {candidate.phone}
                 </a>
               </p>
