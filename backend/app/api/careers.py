@@ -26,6 +26,8 @@ class CareersJob(BaseModel):
 
 class CareersPageOut(BaseModel):
     company_name: str
+    company_logo_url: str | None = None
+    brand_color: str | None = None
     jobs: list[CareersJob]
 
 
@@ -51,7 +53,18 @@ def get_company_careers(
         .order_by(Job.created_at.desc())
         .all()
     )
+    # Брендинг: если включён — показываем название/логотип/цвет компании вместо дефолтных.
+    display_name = company.name
+    logo_url = None
+    brand_color = None
+    if getattr(company, "brand_enabled", False):
+        if company.brand_name:
+            display_name = company.brand_name
+        logo_url = company.brand_logo_url or None
+        brand_color = company.brand_color or None
     return CareersPageOut(
-        company_name=company.name,
+        company_name=display_name,
+        company_logo_url=logo_url,
+        brand_color=brand_color,
         jobs=[CareersJob.model_validate(j) for j in jobs],
     )

@@ -39,9 +39,15 @@ export default function CareersPage() {
           <LanguageSwitcher />
         </div>
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-brand-600 rounded-2xl mb-4 shadow-lg">
-            <Bot className="w-7 h-7 text-white" />
-          </div>
+          {data.company_logo_url ? (
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 shadow-lg bg-white overflow-hidden">
+              <img src={data.company_logo_url} alt={data.company_name || ''} className="w-full h-full object-contain" />
+            </div>
+          ) : (
+            <div className="inline-flex items-center justify-center w-14 h-14 bg-brand-600 rounded-2xl mb-4 shadow-lg">
+              <Bot className="w-7 h-7 text-white" />
+            </div>
+          )}
           <h1 className="text-2xl font-bold text-content">{data.company_name}</h1>
           <p className="text-muted mt-1">{t('careers.openPositions')}</p>
         </div>
