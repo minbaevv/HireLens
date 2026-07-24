@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import api from '../api/client'
 import ScoreBadge from '../components/ScoreBadge'
 import StatusBadge from '../components/StatusBadge'
@@ -26,6 +26,7 @@ const EXPORT_MIME = {
 
 export default function CandidatesPage() {
   const { t, lang } = useT()
+  const navigate = useNavigate()
   const { canWrite } = useAuth()
   const [searchParams] = useSearchParams()
   const [data, setData]             = useState({ items: [], total: 0, pages: 1 })
@@ -331,7 +332,7 @@ export default function CandidatesPage() {
         </div>
       ) : (
         <>
-          <div className="card overflow-hidden mb-4">
+          <div className="card overflow-hidden mb-4 hidden md:block">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-line">
@@ -362,9 +363,9 @@ export default function CandidatesPage() {
               </thead>
               <tbody className="divide-y divide-line">
                 {data.items.map(c => (
-                  <tr key={c.id} className={`hover:bg-surface-muted transition-colors ${selected.has(c.id) ? 'bg-brand-50/40 dark:bg-brand-500/10' : ''}`}>
+                  <tr key={c.id} onClick={() => navigate(`/candidates/${c.id}`)} className={`hover:bg-surface-muted transition-colors cursor-pointer ${selected.has(c.id) ? 'bg-brand-50/40 dark:bg-brand-500/10' : ''}`}>
                     {canWrite && (
-                      <td className="px-4 py-4">
+                      <td className="px-4 py-4" onClick={e => e.stopPropagation()}>
                         <input type="checkbox" checked={selected.has(c.id)} onChange={() => toggleOne(c.id)} />
                       </td>
                     )}
@@ -412,6 +413,43 @@ export default function CandidatesPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Мобильные карточки (на десктопе — таблица выше) */}
+          <div className="md:hidden space-y-3 mb-4">
+            {data.items.map(c => (
+              <Link key={c.id} to={`/candidates/${c.id}`} className="card block p-4 active:bg-surface-muted transition-colors">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-content truncate">{c.name}</p>
+                    <p className="text-xs text-faint truncate">{c.email}</p>
+                    {c.phone && <p className="text-xs text-faint">{c.phone}</p>}
+                  </div>
+                  <StatusBadge status={c.status} />
+                </div>
+                <div className="flex items-center flex-wrap gap-2 mt-3">
+                  <ScoreBadge score={c.score} />
+                  <RecommendationBadge value={c.recommendation} />
+                  {c.requires_manual_review && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
+                      <AlertTriangle className="w-3 h-3" /> {t('candidates.reviewBadge')}
+                    </span>
+                  )}
+                  <span className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-brand-600">
+                    {t('candidates.viewDetails')} <ChevronRight className="w-3.5 h-3.5" />
+                  </span>
+                </div>
+                {Array.isArray(c.tags) && c.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {c.tags.map(tg => (
+                      <span key={tg} className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-brand-100 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300">
+                        <Tag className="w-2.5 h-2.5" />{tg}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </Link>
+            ))}
           </div>
 
           {/* Пагинация */}
