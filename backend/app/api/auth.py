@@ -5,7 +5,7 @@
 """
 import logging
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
@@ -111,7 +111,7 @@ def register(request: Request, body: RegisterRequest, db: Session = Depends(get_
     # Хешируем ВСЕГДА: постоянная стоимость bcrypt во всех ветках — против timing-enumeration.
     hashed = get_password_hash(body.password)
     code = f"{secrets.randbelow(1000000):06d}"
-    expires = datetime.utcnow() + timedelta(minutes=VERIFICATION_CODE_TTL_MINUTES)
+    expires = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(minutes=VERIFICATION_CODE_TTL_MINUTES)
 
     existing = db.query(Company).filter(Company.email == body.email).first()
     if existing is None:
@@ -159,7 +159,7 @@ def verify_email(request: Request, body: VerifyEmailRequest, db: Session = Depen
         raise invalid
     if (
         company.verification_code_expires_at
-        and datetime.utcnow() > company.verification_code_expires_at
+        and datetime.now(timezone.utc).replace(tzinfo=None) > company.verification_code_expires_at
     ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -176,7 +176,7 @@ def verify_email(request: Request, body: VerifyEmailRequest, db: Session = Depen
     # блокируется (is_subscription_active), пока суперадмин не активирует оплату.
     if (company.plan or "free") == "free" and company.plan_expires_at is None:
         company.plan = settings.TRIAL_PLAN
-        company.plan_expires_at = datetime.utcnow() + timedelta(days=settings.TRIAL_DAYS)
+        company.plan_expires_at = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(days=settings.TRIAL_DAYS)
         logger.info(
             f"Trial granted: {company.email} -> {settings.TRIAL_PLAN} на {settings.TRIAL_DAYS} дн."
         )
@@ -196,7 +196,7 @@ def resend_code(request: Request, body: ResendCodeRequest, db: Session = Depends
     if company is not None and not company.is_verified:
         code = f"{secrets.randbelow(1000000):06d}"
         company.verification_code = code
-        company.verification_code_expires_at = datetime.utcnow() + timedelta(
+        company.verification_code_expires_at = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(
             minutes=VERIFICATION_CODE_TTL_MINUTES
         )
         db.commit()

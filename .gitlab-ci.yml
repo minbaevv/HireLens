@@ -22,7 +22,6 @@ lint:backend:
     - cd backend
     - ruff check .
     - ruff format --check .
-  allow_failure: true # временно: убрать после исправления замечаний (A1.2)
 
 lint:frontend:
   stage: lint
@@ -33,7 +32,6 @@ lint:frontend:
     - npm install --no-save eslint@9 @eslint/js@9 globals eslint-plugin-react-hooks@5
   script:
     - npx eslint src
-  allow_failure: true # временно: убрать после исправления замечаний (A1.2)
 
 # --- ТЕСТЫ BACKEND ---
 test:backend:

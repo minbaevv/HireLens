@@ -5,7 +5,7 @@ JWT может принадлежать либо владельцу компан
 старые токены без этого claim трактуются как "company" (обратная совместимость).
 """
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import Depends, Header, HTTPException, status
@@ -119,7 +119,7 @@ def is_subscription_active(company: Company) -> bool:
         return True
     if company.plan_expires_at is None:
         return True
-    return company.plan_expires_at >= datetime.utcnow()
+    return company.plan_expires_at >= datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 def require_active_subscription(
@@ -174,7 +174,7 @@ def get_api_company(
         raise invalid
     # last_used_at — best-effort, не критично при сбое
     try:
-        key.last_used_at = datetime.utcnow()
+        key.last_used_at = datetime.now(timezone.utc).replace(tzinfo=None)
         db.commit()
     except Exception:
         db.rollback()

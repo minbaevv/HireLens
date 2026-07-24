@@ -5,7 +5,7 @@
 реферальный бонус (продление на N месяцев). Доступ — только для email из SUPERADMIN_EMAILS.
 """
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import FileResponse
@@ -126,7 +126,7 @@ def set_plan(
     if body.plan == "free":
         c.plan_expires_at = None
     elif body.months:
-        base = max(c.plan_expires_at or datetime.utcnow(), datetime.utcnow())
+        base = max(c.plan_expires_at or datetime.now(timezone.utc).replace(tzinfo=None), datetime.now(timezone.utc).replace(tzinfo=None))
         c.plan_expires_at = base + timedelta(days=30 * body.months)
     db.commit()
     db.refresh(c)
@@ -155,7 +155,7 @@ def grant_bonus(
     c = _get_company_or_404(company_id, db)
     if (c.plan or "free") == "free":
         c.plan = "starter"
-    base = max(c.plan_expires_at or datetime.utcnow(), datetime.utcnow())
+    base = max(c.plan_expires_at or datetime.now(timezone.utc).replace(tzinfo=None), datetime.now(timezone.utc).replace(tzinfo=None))
     c.plan_expires_at = base + timedelta(days=30 * body.months)
     db.commit()
     db.refresh(c)
@@ -219,7 +219,7 @@ def review_receipt(
     r.status = body.status
     r.note = body.note
     r.reviewed_by = admin.email
-    r.reviewed_at = datetime.utcnow()
+    r.reviewed_at = datetime.now(timezone.utc).replace(tzinfo=None)
     db.commit()
     db.refresh(r)
     record_audit(

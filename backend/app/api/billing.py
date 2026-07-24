@@ -4,7 +4,7 @@
 карту Visa, а тариф активирует суперадмин вручную (см. /admin). Клиент может
 прикрепить чек об оплате прямо здесь — заявка появится у суперадмина.
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile, status
@@ -66,7 +66,7 @@ def get_my_billing(
     active = is_subscription_active(company)
     days_left = None
     if not is_free and company.plan_expires_at is not None:
-        days_left = (company.plan_expires_at - datetime.utcnow()).days
+        days_left = (company.plan_expires_at - datetime.now(timezone.utc).replace(tzinfo=None)).days
     return BillingStatus(
         plan=plan,
         plan_expires_at=company.plan_expires_at.isoformat() if company.plan_expires_at else None,
@@ -120,7 +120,7 @@ async def upload_receipt(
 
     upload_dir = Path("uploads/receipts") / str(company.id)
     upload_dir.mkdir(parents=True, exist_ok=True)
-    stored_name = f"{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}{ext}"
+    stored_name = f"{datetime.now(timezone.utc).replace(tzinfo=None).strftime('%Y%m%d_%H%M%S')}{ext}"
     path = upload_dir / stored_name
     with open(path, "wb") as f:
         f.write(data)

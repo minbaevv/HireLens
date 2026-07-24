@@ -1,7 +1,7 @@
 """GAP-5 — Coding-ассессменты: HR-управление + публичный поток кандидата."""
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -361,7 +361,7 @@ def review_submission(
     s.reviewer_notes = data.reviewer_notes
     s.requires_manual_review = False
     s.status = "reviewed"
-    s.reviewed_at = datetime.utcnow()
+    s.reviewed_at = datetime.now(timezone.utc).replace(tzinfo=None)
     db.commit()
     db.refresh(s)
     record_audit(
@@ -410,7 +410,7 @@ def public_submit(token: str, data: SubmitRequest, db: Session = Depends(get_db)
     sub.auto_feedback = json.dumps(result["feedback"], ensure_ascii=False)
     sub.requires_manual_review = result["requires_manual_review"]
     sub.status = "submitted"
-    sub.submitted_at = datetime.utcnow()
+    sub.submitted_at = datetime.now(timezone.utc).replace(tzinfo=None)
     db.commit()
     logger.info("Получено решение coding submission_id=%s", sub.id)
     return SubmitResponse(

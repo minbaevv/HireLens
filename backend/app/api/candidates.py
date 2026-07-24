@@ -1,4 +1,5 @@
 """Candidate Flow: публичная подача заявки + HR-просмотр кандидатов."""
+import html
 import json
 import logging
 from datetime import UTC, datetime
@@ -9,10 +10,11 @@ from sqlalchemy.orm import Session
 
 from pydantic import BaseModel, Field
 
-from fastapi.responses import Response, StreamingResponse
+from fastapi.responses import HTMLResponse, Response, StreamingResponse
 
 from app.api.deps import CurrentActor, get_current_company, require_write_access
 from app.api.schemas import CandidateApply, CandidateListItem, CandidateOut, JobPublicOut, FinalDecisionRequest
+from app.core.config import settings
 from app.core.db import get_db
 from app.core.audit import actor_fields, record_audit
 from app.core.plans import enforce_candidate_quota
@@ -144,6 +146,54 @@ def get_job_by_token(
         **brand,
     )
 
+
+@router.get("/{token}/og", include_in_schema=False)
+def apply_job_og(token: str, db: Session = Depends(get_db)) -> HTMLResponse:
+    """OG-мета для превью ссылки в мессенджерах/соцсетях (WhatsApp, Telegram и т.д.).
+
+    Отдаёт название вакансии + компанию вместо общего заголовка. Краулеры nginx направляют сюда."""
+    base = (settings.FRONTEND_URL or "").rstrip("/")
+    page_url = f"{base}/apply/{token}"
+    job = db.query(Job).filter(Job.apply_token == token, Job.is_active == True).first()
+    site = "HireLens"
+    image = ""
+    if job is not None:
+        company = job.company
+        if company is not None and getattr(company, "brand_enabled", False):
+            if company.brand_name:
+                site = company.brand_name
+            if company.brand_logo_url:
+                logo = company.brand_logo_url
+                image = logo if logo.startswith("http") else base + logo
+        title = f"{job.title} — {site}"
+        raw = " ".join((job.description or "").split())
+        desc = (raw[:157] + "…") if len(raw) > 158 else (raw or f"Вакансия «{job.title}». Пройдите короткое AI-интервью.")
+    else:
+        title = "HireLens — AI-скрининг кандидатов"
+        desc = "Пройдите короткое AI-интервью по вакансии."
+
+    def e(s: str) -> str:
+        return html.escape(s or "", quote=True)
+
+    img_tag = f'<meta property="og:image" content="{e(image)}">' if image else ""
+    doc = (
+        '<!doctype html><html lang="ru"><head><meta charset="utf-8">'
+        f"<title>{e(title)}</title>"
+        '<meta name="viewport" content="width=device-width, initial-scale=1">'
+        f'<meta name="description" content="{e(desc)}">'
+        '<meta property="og:type" content="website">'
+        f'<meta property="og:title" content="{e(title)}">'
+        f'<meta property="og:description" content="{e(desc)}">'
+        f'<meta property="og:url" content="{e(page_url)}">'
+        f'<meta property="og:site_name" content="{e(site)}">'
+        f"{img_tag}"
+        '<meta name="twitter:card" content="summary_large_image">'
+        f'<meta name="twitter:title" content="{e(title)}">'
+        f'<meta name="twitter:description" content="{e(desc)}">'
+        f'<meta http-equiv="refresh" content="0; url={e(page_url)}">'
+        f'</head><body><p>Перенаправление… <a href="{e(page_url)}">{e(title)}</a></p></body></html>'
+    )
+    return HTMLResponse(content=doc)
 
 @router.post(
     "/{token}",

@@ -10,7 +10,7 @@
 отдельной миграции и вынесено в follow-up.
 """
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel
@@ -75,7 +75,7 @@ def export_data(
     )
     members = db.query(TeamMember).filter(TeamMember.company_id == company.id).all()
     export = {
-        "exported_at": datetime.utcnow().isoformat() + "Z",
+        "exported_at": datetime.now(timezone.utc).replace(tzinfo=None).isoformat() + "Z",
         "company": _safe_row(company),
         "jobs": [_safe_row(j) for j in jobs],
         "candidates": [_safe_row(c) for c in candidates],

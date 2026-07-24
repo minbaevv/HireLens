@@ -12,7 +12,7 @@
 Примечание по Pro: «далее 45 сом за кандидата» (overage) требует платёжного
 шлюза и пока НЕ подключено — 300 трактуется как жёсткий месячный лимит.
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import HTTPException, status
@@ -41,7 +41,7 @@ def effective_plan(company) -> str:
     if plan not in PLAN_LIMITS or plan == DEFAULT_PLAN:
         return DEFAULT_PLAN
     expires = getattr(company, "plan_expires_at", None)
-    if expires is not None and expires < datetime.utcnow():
+    if expires is not None and expires < datetime.now(timezone.utc).replace(tzinfo=None):
         return DEFAULT_PLAN
     return plan
 
@@ -51,7 +51,7 @@ def limits_for(company) -> dict:
 
 
 def _month_start(now: Optional[datetime] = None) -> datetime:
-    now = now or datetime.utcnow()
+    now = now or datetime.now(timezone.utc).replace(tzinfo=None)
     return datetime(now.year, now.month, 1)
 
 

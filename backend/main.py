@@ -64,9 +64,17 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
+# CORS: в production разрешаем только реальный фронтенд-домен, в dev — localhost.
+_cors_origins = [settings.FRONTEND_URL]
+if settings.ENVIRONMENT != "production":
+    _cors_origins += ["http://localhost:3000", "http://localhost", "http://localhost:5173"]
+_cors_origins = [o for o in dict.fromkeys(_cors_origins) if o]
+if settings.ENVIRONMENT == "production" and "localhost" in settings.FRONTEND_URL:
+    logger.warning("FRONTEND_URL всё ещё localhost в production — задайте реальный домен в .env для корректного CORS.")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.FRONTEND_URL, "http://localhost:3000", "http://localhost"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-Interview-Token", "X-API-Key"],

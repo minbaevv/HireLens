@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Code2, Plus, Pencil, Trash2, Eye, EyeOff, ChevronDown, ChevronUp } from 'lucide-react'
+import { Code2, Plus, Pencil, Trash2, Eye, EyeOff, ChevronDown, ChevronUp, Info } from 'lucide-react'
 import api from '../api/client'
 import Spinner from '../components/Spinner'
 import { useT } from '../i18n'
@@ -135,6 +135,11 @@ export default function CodingPage() {
         <h1 className="text-2xl font-bold text-content">{t('coding.title')}</h1>
       </div>
       <p className="text-sm text-muted mb-6">{t('coding.subtitle')}</p>
+
+      <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10 px-4 py-3 mb-6">
+        <Info className="w-4 h-4 mt-0.5 text-amber-600 dark:text-amber-400 shrink-0" />
+        <p className="text-sm text-amber-800 dark:text-amber-200">{t('coding.optionalBanner')}</p>
+      </div>
 
       {error && <div className="mb-4 px-4 py-3 rounded-lg bg-red-50 text-red-700 dark:bg-red-500/15 dark:text-red-300 text-sm">{error}</div>}
 

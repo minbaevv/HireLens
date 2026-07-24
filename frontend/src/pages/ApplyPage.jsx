@@ -1,12 +1,31 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import axios from 'axios'
-import { Bot, Upload, FileText } from 'lucide-react'
+import { Bot, Upload, FileText, Info, CheckCircle2 } from 'lucide-react'
 import Spinner from '../components/Spinner'
 import LanguageSwitcher from '../components/LanguageSwitcher'
 import Logo from '../components/Logo'
 import AnimatedBackground from '../components/AnimatedBackground'
 import { useT } from '../i18n'
+
+function RichText({ text }) {
+  const lines = String(text || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean)
+  if (lines.length === 0) return <p className="text-sm text-muted italic">—</p>
+  return (
+    <div className="space-y-1.5">
+      {lines.map((line, i) => {
+        const m = line.match(/^[-•*–—]\s*(.+)/)
+        if (m) return (
+          <div key={i} className="flex items-start gap-2 text-sm text-muted">
+            <CheckCircle2 className="w-4 h-4 mt-0.5 text-brand-500 shrink-0" />
+            <span>{m[1]}</span>
+          </div>
+        )
+        return <p key={i} className="text-sm text-muted">{line}</p>
+      })}
+    </div>
+  )
+}
 
 export default function ApplyPage() {
   const { token } = useParams()
@@ -85,10 +104,10 @@ export default function ApplyPage() {
           <p className="text-muted mt-1">{t('apply.subtitle')}</p>
         </div>
         <div className="card p-5 mb-5">
-          <h2 className="text-sm font-semibold text-content mb-2">{t('apply.about')}</h2>
-          <p className="text-sm text-muted mb-3">{job.description}</p>
-          <h2 className="text-sm font-semibold text-content mb-2">{t('apply.requirements')}</h2>
-          <p className="text-sm text-muted">{job.requirements}</p>
+          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-content mb-2"><Info className="w-4 h-4 text-brand-500" />{t('apply.about')}</h2>
+          <div className="mb-4"><RichText text={job.description} /></div>
+          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-content mb-2"><CheckCircle2 className="w-4 h-4 text-brand-500" />{t('apply.requirements')}</h2>
+          <RichText text={job.requirements} />
         </div>
         <div className="card p-6">
           <form onSubmit={handleSubmit} className="space-y-4">
