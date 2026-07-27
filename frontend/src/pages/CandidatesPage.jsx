@@ -16,7 +16,7 @@ import {
 
 const PAGE_SIZE = 20
 const DATE_LOCALES = { ru: 'ru-RU', ky: 'ky-KG', en: 'en-US' }
-const STATUS_OPTIONS = ['applied', 'interviewing', 'completed', 'hired', 'rejected']
+const STATUS_OPTIONS = ['applied', 'interviewing', 'completed', 'invited', 'hired', 'rejected']
 
 const EXPORT_MIME = {
   csv: 'text/csv',
@@ -371,6 +371,7 @@ export default function CandidatesPage() {
                     )}
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
+                        {c.photo_url && <img src={c.photo_url} alt="" className="w-9 h-9 rounded-full object-cover border border-line shrink-0" />}
                         <div>
                           <p className="text-sm font-medium text-content">{c.name}</p>
                           <p className="text-xs text-faint">{c.email}</p>
@@ -420,6 +421,7 @@ export default function CandidatesPage() {
             {data.items.map(c => (
               <Link key={c.id} to={`/candidates/${c.id}`} className="card block p-4 active:bg-surface-muted transition-colors">
                 <div className="flex items-start justify-between gap-3">
+                  {c.photo_url && <img src={c.photo_url} alt="" className="w-10 h-10 rounded-full object-cover border border-line shrink-0" />}
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-content truncate">{c.name}</p>
                     <p className="text-xs text-faint truncate">{c.email}</p>

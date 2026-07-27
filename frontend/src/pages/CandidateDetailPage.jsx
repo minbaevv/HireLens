@@ -8,7 +8,7 @@ import RecommendationBadge from '../components/RecommendationBadge'
 import Spinner from '../components/Spinner'
 import { useT } from '../i18n'
 import { useAuth } from '../hooks/useAuth'
-import { ArrowLeft, CheckCircle, XCircle, FileText, Download, AlertTriangle, ClipboardCheck, RefreshCw } from 'lucide-react'
+import { ArrowLeft, CheckCircle, XCircle, FileText, Download, AlertTriangle, ClipboardCheck, RefreshCw, MessageSquare, CalendarClock } from 'lucide-react'
 import SchedulingCard from '../components/SchedulingCard'
 import CodingCard from '../components/CodingCard'
 
@@ -38,6 +38,7 @@ export default function CandidateDetailPage() {
   const navigate = useNavigate()
   const { t } = useT()
   const [candidate, setCandidate] = useState(null)
+  const [transcript, setTranscript] = useState(null)
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
 
@@ -49,12 +50,24 @@ export default function CandidateDetailPage() {
   const [tab, setTab] = useState('scoring')
   const [rescoring, setRescoring] = useState(false)
 
+  // Приглашение на очное собеседование
+  const [inviteOpen, setInviteOpen] = useState(false)
+  const [inviteDate, setInviteDate] = useState('')
+  const [inviteTime, setInviteTime] = useState('')
+  const [inviteLocation, setInviteLocation] = useState('')
+  const [inviteNote, setInviteNote] = useState('')
+  const [inviting, setInviting] = useState(false)
+
   async function load() {
     const { data } = await api.get(`/candidates/${id}`)
     setCandidate(data)
     setDecision(data.actual_hire_decision || '')
     setFeedback(data.ai_feedback || '')
     setNotes(data.hr_notes || '')
+    try {
+      const tr = await api.get(`/candidates/${id}/transcript`)
+      setTranscript(tr.data)
+    } catch { setTranscript(null) }
     setLoading(false)
   }
 
@@ -65,6 +78,24 @@ export default function CandidateDetailPage() {
     await api.patch(`/candidates/${id}/status?new_status=${status}`)
     await load()
     setUpdating(false)
+  }
+
+  async function sendInvite() {
+    if (!inviteDate || !inviteLocation) return
+    setInviting(true)
+    try {
+      await api.post(`/candidates/${id}/invite`, {
+        date: inviteDate,
+        time: inviteTime,
+        location: inviteLocation,
+        note: inviteNote,
+      })
+      setInviteOpen(false)
+      setInviteDate(''); setInviteTime(''); setInviteLocation(''); setInviteNote('')
+      await load()
+    } finally {
+      setInviting(false)
+    }
   }
 
   async function saveDecision() {
@@ -132,6 +163,17 @@ export default function CandidateDetailPage() {
         <ArrowLeft className="w-4 h-4" /> {t('common.back')}
       </button>
 
+      {candidate.photo_url && (
+        <div className="flex items-center gap-4 mb-6">
+          <img src={candidate.photo_url} alt={candidate.name}
+            className="w-20 h-20 rounded-full object-cover border border-line" />
+          <div>
+            <p className="text-lg font-semibold text-content">{candidate.name}</p>
+            <p className="text-sm text-muted">{candidate.email}</p>
+          </div>
+        </div>
+      )}
+
       {candidate.requires_manual_review && (
         <div className="mb-4 p-4 rounded-xl bg-amber-50 border border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/30">
           <div className="flex items-start gap-3">
@@ -182,12 +224,46 @@ export default function CandidateDetailPage() {
               <button onClick={() => updateStatus('rejected')} disabled={updating} className="btn-danger">
                 <XCircle className="w-4 h-4" /> {t('candidateDetail.reject')}
               </button>
+              <button onClick={() => setInviteOpen(v => !v)} disabled={updating} className="btn-secondary">
+                <CalendarClock className="w-4 h-4" /> {t('candidateDetail.inviteBtn')}
+              </button>
             </>
           )}
           <button onClick={downloadPdf} className="btn-secondary">
             <Download className="w-4 h-4" /> {t('candidateDetail.downloadPdf')}
           </button>
         </div>
+        {inviteOpen && (
+          <div className="mt-4 pt-4 border-t border-line space-y-3">
+            <h3 className="font-semibold text-content">{t('candidateDetail.inviteTitle')}</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm text-muted mb-1">{t('candidateDetail.inviteDate')}</label>
+                <input type="date" value={inviteDate} onChange={e => setInviteDate(e.target.value)} className="input w-full" />
+              </div>
+              <div>
+                <label className="block text-sm text-muted mb-1">{t('candidateDetail.inviteTime')}</label>
+                <input type="time" value={inviteTime} onChange={e => setInviteTime(e.target.value)} className="input w-full" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm text-muted mb-1">{t('candidateDetail.inviteLocation')}</label>
+              <input type="text" value={inviteLocation} onChange={e => setInviteLocation(e.target.value)} className="input w-full" />
+            </div>
+            <div>
+              <label className="block text-sm text-muted mb-1">{t('candidateDetail.inviteNote')}</label>
+              <textarea value={inviteNote} onChange={e => setInviteNote(e.target.value)} rows={3} className="input w-full" />
+            </div>
+            <div className="flex gap-3">
+              <button onClick={sendInvite} disabled={!inviteDate || !inviteLocation || inviting} className="btn-primary">
+                <CalendarClock className="w-4 h-4" /> {t('candidateDetail.inviteSend')}
+              </button>
+              <button onClick={() => setInviteOpen(false)} className="btn-secondary">
+                {t('candidateDetail.inviteCancel')}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {candidate.summary && (
@@ -382,6 +458,25 @@ export default function CandidateDetailPage() {
         </button>
         )}
       </div>
+
+      {transcript && Array.isArray(transcript.messages) && transcript.messages.length > 0 && (
+        <div className="card p-6 mb-4">
+          <div className="flex items-center gap-2 mb-4">
+            <MessageSquare className="w-4 h-4 text-brand-600" />
+            <h2 className="font-semibold text-content">{t('candidateDetail.transcriptTitle')}</h2>
+          </div>
+          <div className="space-y-4">
+            {transcript.messages.map(m => (
+              <div key={m.id} className={m.role === 'ai' ? '' : 'pl-3 border-l-2 border-brand-300 dark:border-brand-500/40'}>
+                <p className={`text-xs font-semibold mb-1 ${m.role === 'ai' ? 'text-muted' : 'text-brand-600'}`}>
+                  {m.role === 'ai' ? t('candidateDetail.transcriptAi') : t('candidateDetail.transcriptCandidate')}
+                </p>
+                <p className="text-sm text-content whitespace-pre-wrap leading-relaxed">{m.content}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {candidate.resume_text && (
         <div className="card p-6">

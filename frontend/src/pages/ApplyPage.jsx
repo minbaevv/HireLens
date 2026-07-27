@@ -37,6 +37,7 @@ export default function ApplyPage() {
   const [error, setError] = useState('')
   const [form, setForm] = useState({ name: '', email: '', phone: '', resume_text: '' })
   const [file, setFile] = useState(null)
+  const [photo, setPhoto] = useState(null)
   const [useFile, setUseFile] = useState(false)
 
   useEffect(() => {
@@ -62,6 +63,7 @@ export default function ApplyPage() {
       if (form.phone) fd.append('phone', form.phone)
       if (useFile && file) fd.append('resume_file', file)
       else if (form.resume_text) fd.append('resume_text', form.resume_text)
+      if (photo) fd.append('photo_file', photo)
       const { data } = await axios.post(`/api/apply/${token}`, fd)
       const iv = await axios.post(`/api/interviews/${data.id}/start`)
       // SEC-1: токен доступа к интервью — без него бэкенд отклонит запросы
@@ -156,6 +158,14 @@ export default function ApplyPage() {
                   placeholder={t('apply.resumePlaceholder')}
                   value={form.resume_text} onChange={e => setForm(f => ({ ...f, resume_text: e.target.value }))} />
               )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-content mb-1.5">{t('apply.photo')}</label>
+              <label className="flex items-center gap-3 w-full px-4 py-3 border-2 border-dashed border-line rounded-lg cursor-pointer hover:border-brand-400 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors">
+                <Upload className="w-5 h-5 text-faint shrink-0" />
+                <span className="text-sm text-muted truncate">{photo ? photo.name : t('apply.photoHint')}</span>
+                <input type="file" className="hidden" accept="image/png,image/jpeg,image/webp" onChange={e => setPhoto(e.target.files[0])} />
+              </label>
             </div>
             {error && <div className="bg-red-50 border border-red-200 text-red-700 dark:bg-red-500/10 dark:border-red-500/30 dark:text-red-300 text-sm px-4 py-3 rounded-lg">{error}</div>}
             <button type="submit" className="btn-primary w-full justify-center py-3" disabled={submitting}>

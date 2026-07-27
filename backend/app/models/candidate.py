@@ -10,6 +10,7 @@ class CandidateStatus(str, enum.Enum):
     applied = "applied"
     interviewing = "interviewing"
     completed = "completed"
+    invited = "invited"
     hired = "hired"
     rejected = "rejected"
 
@@ -23,6 +24,7 @@ class Candidate(Base):
     email = Column(String(255), nullable=False, index=True)
     phone = Column(String(32), nullable=True)  # WhatsApp/телефон кандидата (pilot feedback: Dinara)
     resume_text = Column(Text, nullable=True)
+    photo_url = Column(String(500), nullable=True)  # необязательное фото кандидата (pilot: Dinara)
     status = Column(Enum(CandidateStatus), default=CandidateStatus.applied, nullable=False)
     score = Column(Float, nullable=True)
     pre_score = Column(Float, nullable=True)  # AI скрининг резюме до интервью

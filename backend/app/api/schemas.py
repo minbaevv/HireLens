@@ -133,6 +133,7 @@ class CandidateOut(BaseModel):
     email: EmailStr
     phone: Optional[str] = None
     resume_text: Optional[str]
+    photo_url: Optional[str] = None
     status: CandidateStatus
     score: Optional[float]
     pre_score: Optional[float]
@@ -215,6 +216,7 @@ class CandidateListItem(BaseModel):
     pre_score: Optional[float]
     recommendation: Optional[str]
     requires_manual_review: bool = False
+    photo_url: Optional[str] = None
     tags: list[str] = []
     created_at: datetime
 

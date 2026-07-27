@@ -3,6 +3,8 @@ import html
 import json
 import logging
 import re
+import secrets
+from pathlib import Path
 from datetime import UTC, datetime
 from typing import List, Optional
 
@@ -35,11 +37,27 @@ hr_router = APIRouter(prefix="/candidates", tags=["candidates"])
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
 ALLOWED_EXTENSIONS = {".pdf", ".txt"}  # SEC-13: .doc/.docx убраны (небезопасный парсинг)
 
+# Фото кандидата (pilot feedback: Dinara) — необязательное
+PHOTO_DIR = Path("uploads/photos")
+ALLOWED_PHOTO_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
+MAX_PHOTO_SIZE = 5 * 1024 * 1024  # 5 MB
+
+
+def _valid_candidate_photo(ext: str, data: bytes) -> bool:
+    if ext == ".png":
+        return data[:8] == b"\x89PNG\r\n\x1a\n"
+    if ext in (".jpg", ".jpeg"):
+        return data[:3] == b"\xff\xd8\xff"
+    if ext == ".webp":
+        return data[:4] == b"RIFF" and data[8:12] == b"WEBP"
+    return False
+
 # Порядок колонок Kanban
 KANBAN_COLUMNS = [
     CandidateStatus.applied,
     CandidateStatus.interviewing,
     CandidateStatus.completed,
+    CandidateStatus.invited,
     CandidateStatus.hired,
     CandidateStatus.rejected,
 ]
@@ -58,6 +76,12 @@ ALLOWED_STAGE_TRANSITIONS: dict[CandidateStatus, set[CandidateStatus]] = {
         CandidateStatus.hired,
         CandidateStatus.rejected,
         CandidateStatus.interviewing,  # повторное интервью
+        CandidateStatus.invited,       # приглашение на очное собеседование
+    },
+    CandidateStatus.invited: {
+        CandidateStatus.hired,
+        CandidateStatus.rejected,
+        CandidateStatus.completed,     # вернуть в "оценены"
     },
     CandidateStatus.hired: {
         CandidateStatus.rejected,  # отмена оффера
@@ -84,6 +108,7 @@ STATUS_LABELS: dict[CandidateStatus, str] = {
     CandidateStatus.applied: "📩 Новые",
     CandidateStatus.interviewing: "🎤 Интервью",
     CandidateStatus.completed: "✅ Оценены",
+    CandidateStatus.invited: "📅 Приглашены",
     CandidateStatus.hired: "🎉 Наняты",
     CandidateStatus.rejected: "❌ Отказ",
 }
@@ -213,8 +238,6 @@ def _normalize_phone(raw):
         return None
     if has_plus:
         return "+" + digits
-    if digits.startswith("00"):
-        return "+" + digits[2:]
     if digits.startswith("996"):
         return "+" + digits
     if digits.startswith("0"):
@@ -239,6 +262,7 @@ def apply_to_job(
     phone: Optional[str] = Form(default=None, max_length=32),
     resume_text: Optional[str] = Form(default=None),
     resume_file: Optional[UploadFile] = File(default=None),
+    photo_file: Optional[UploadFile] = File(default=None),
     db: Session = Depends(get_db),
 ) -> CandidateOut:
     """Кандидат подаёт заявку: имя, email и резюме (текст или файл PDF/TXT)."""
@@ -302,6 +326,28 @@ def apply_to_job(
         elif not final_resume_text:
             logger.warning(f"Не удалось извлечь текст из файла {resume_file.filename}")
 
+    # Фото кандидата (необязательно): валидируем до создания записи
+    photo_bytes = None
+    photo_ext = ""
+    if photo_file and photo_file.filename:
+        photo_ext = ("." + photo_file.filename.rsplit(".", 1)[-1].lower()) if "." in photo_file.filename else ""
+        if photo_ext not in ALLOWED_PHOTO_EXTENSIONS:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Фото: поддерживаются PNG, JPG или WEBP",
+            )
+        photo_bytes = photo_file.file.read()
+        if len(photo_bytes) > MAX_PHOTO_SIZE:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail="Фото слишком большое. Максимум 5 MB",
+            )
+        if not _valid_candidate_photo(photo_ext, photo_bytes):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Файл не является корректным изображением",
+            )
+
     candidate = Candidate(
         job_id=job.id,
         name=name,
@@ -315,6 +361,18 @@ def apply_to_job(
     db.refresh(candidate)
 
     logger.info(f"Новый кандидат #{candidate.id} на вакансию '{job.title}' (job_id={job.id})")
+
+    # Сохраняем фото (после commit — нужен candidate.id)
+    if photo_bytes is not None:
+        try:
+            PHOTO_DIR.mkdir(parents=True, exist_ok=True)
+            pfname = f"{candidate.id}_{secrets.token_hex(8)}{photo_ext}"
+            (PHOTO_DIR / pfname).write_bytes(photo_bytes)
+            candidate.photo_url = f"/api/candidates/photo/{pfname}"
+            db.commit()
+            db.refresh(candidate)
+        except Exception as e:
+            logger.warning(f"Не удалось сохранить фото кандидата #{candidate.id}: {e}")
 
     # D2 — webhook candidate.created (best-effort, поток заявки не блокируем).
     try:
@@ -977,6 +1035,138 @@ def get_scoring_details(
         },
         "questions": attr_data.get("questions", []),
     }
+
+
+@hr_router.get(
+    "/{candidate_id}/transcript",
+    summary="Транскрипт интервью кандидата",
+)
+def get_candidate_transcript(
+    candidate_id: int,
+    db: Session = Depends(get_db),
+    current_company: Company = Depends(get_current_company),
+):
+    """Диалог последнего интервью (роль ai/user + текст) — HR видит ответы в карточке без PDF."""
+    candidate = (
+        db.query(Candidate)
+        .join(Job, Candidate.job_id == Job.id)
+        .filter(Candidate.id == candidate_id, Job.company_id == current_company.id)
+        .first()
+    )
+    if not candidate:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Кандидат не найден")
+
+    interview = (
+        db.query(Interview)
+        .filter(Interview.candidate_id == candidate_id)
+        .order_by(Interview.id.desc())
+        .first()
+    )
+    messages = []
+    if interview:
+        messages = (
+            db.query(Message)
+            .filter(Message.interview_id == interview.id)
+            .order_by(Message.id)
+            .all()
+        )
+
+    return {
+        "candidate_id": candidate.id,
+        "interview_id": interview.id if interview else None,
+        "messages": [
+            {
+                "id": m.id,
+                "role": m.role.value,
+                "content": m.content,
+                "video_url": m.video_url,
+                "created_at": m.created_at.isoformat() if m.created_at else None,
+            }
+            for m in messages
+        ],
+    }
+
+
+@hr_router.get("/photo/{filename}", summary="Фото кандидата")
+def get_candidate_photo(filename: str):
+    """Публичная раздача фото кандидата (имя файла содержит случайный токен)."""
+    from fastapi.responses import FileResponse
+    safe = Path(filename).name
+    if safe != filename:
+        raise HTTPException(status_code=400, detail="Некорректное имя файла")
+    path = PHOTO_DIR / safe
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Фото не найдено")
+    return FileResponse(path)
+
+
+class InviteRequest(BaseModel):
+    date: str = Field(min_length=1, max_length=40)
+    time: str = Field(default="", max_length=40)
+    location: str = Field(min_length=1, max_length=300)
+    note: str = Field(default="", max_length=1000)
+
+
+@hr_router.post(
+    "/{candidate_id}/invite",
+    response_model=CandidateOut,
+    summary="Пригласить кандидата на очное собеседование",
+)
+def invite_candidate(
+    candidate_id: int,
+    body: InviteRequest,
+    db: Session = Depends(get_db),
+    actor: CurrentActor = Depends(require_write_access),
+) -> CandidateOut:
+    """Отправляет кандидату письмо-приглашение на очное собеседование
+    и переводит его в статус 'invited' (требует роль admin/recruiter)."""
+    current_company = actor.company
+    candidate = (
+        db.query(Candidate)
+        .join(Job, Candidate.job_id == Job.id)
+        .filter(
+            Candidate.id == candidate_id,
+            Job.company_id == current_company.id,
+        )
+        .first()
+    )
+    if not candidate:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Кандидат не найден",
+        )
+
+    candidate.status = CandidateStatus.invited
+    db.commit()
+    db.refresh(candidate)
+    logger.info(f"Кандидат #{candidate_id} приглашён на очное собеседование")
+    record_audit(
+        db,
+        company_id=current_company.id,
+        action="candidate.invited",
+        entity_type="candidate",
+        entity_id=candidate.id,
+        detail={"date": body.date, "time": body.time, "location": body.location},
+        **actor_fields(actor),
+    )
+
+    try:
+        from app.services.email import notify_interview_invitation
+        notify_interview_invitation(
+            candidate_name=candidate.name,
+            candidate_email=candidate.email,
+            job_title=candidate.job.title,
+            date=body.date,
+            time=body.time,
+            location=body.location,
+            note=body.note,
+            company_name=(getattr(current_company, "brand_name", None) or getattr(current_company, "name", "")),
+            language=getattr(candidate.job, "language", "ru"),
+        )
+    except Exception as e:
+        logger.warning(f"Email приглашение кандидату не отправлено: {e}")
+
+    return CandidateOut.model_validate(candidate)
 
 
 @hr_router.patch(

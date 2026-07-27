@@ -158,6 +158,74 @@ def notify_candidate_status(candidate_name: str, candidate_email: str,
 
 
 
+def notify_interview_invitation(candidate_name: str, candidate_email: str,
+                                 job_title: str, date: str, time: str = "",
+                                 location: str = "", note: str = "",
+                                 company_name: str = "",
+                                 language: str = "ru") -> bool:
+    """Приглашает кандидата на очное (живое) собеседование.
+    Дату/время/адрес вводит HR — они подставляются в письмо."""
+    lang = normalize_language(language)
+    T = {
+        "ru": {
+            "title": "Приглашение на собеседование",
+            "intro": "Рады сообщить, что мы приглашаем вас на собеседование по вакансии",
+            "when": "Дата",
+            "time": "Время",
+            "where": "Место",
+            "outro": "Пожалуйста, подтвердите участие ответным письмом. Будем рады встрече!",
+        },
+        "ky": {
+            "title": "Маегке чакыруу",
+            "intro": "Сизди төмөнкү вакансия боюнча маегке чакырабыз",
+            "when": "Күнү",
+            "time": "Убакыт",
+            "where": "Дарек",
+            "outro": "Катышууңузду ырастап, жооп кат жазыңыз. Жолугушууну күтөбүз!",
+        },
+        "en": {
+            "title": "Interview invitation",
+            "intro": "We are glad to invite you to an interview for the position",
+            "when": "Date",
+            "time": "Time",
+            "where": "Location",
+            "outro": "Please confirm your attendance by replying to this email. We look forward to meeting you!",
+        },
+    }
+    tx = T.get(lang, T["ru"])
+    greeting = EMAIL_GREETING.get(lang, EMAIL_GREETING["ru"])
+
+    time_row = (
+        f'<tr><td style="padding: 8px; color: #6B7280;">{tx["time"]}:</td>'
+        f'<td style="padding: 8px;"><strong>{time}</strong></td></tr>'
+    ) if time else ""
+    note_block = (
+        f'<div style="background: #F9FAFB; padding: 16px; border-radius: 8px; '
+        f'margin: 16px 0; color: #374151;">{note}</div>'
+    ) if note else ""
+    sig = f" — {company_name}" if company_name else ""
+
+    subject = f"{tx['title']} — {job_title}"
+    html = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #4F46E5;">{tx['title']}</h2>
+        <p>{greeting} <strong>{candidate_name}</strong>,</p>
+        <p>{tx['intro']} <strong>{job_title}</strong>.</p>
+        <table style="border-collapse: collapse; width: 100%;">
+            <tr><td style="padding: 8px; color: #6B7280;">{tx['when']}:</td>
+                <td style="padding: 8px;"><strong>{date}</strong></td></tr>
+            {time_row}
+            <tr><td style="padding: 8px; color: #6B7280;">{tx['where']}:</td>
+                <td style="padding: 8px;"><strong>{location}</strong></td></tr>
+        </table>
+        {note_block}
+        <p>{tx['outro']}</p>
+        <p style="color: #9CA3AF; font-size: 12px; margin-top: 30px;">HireLens{sig}</p>
+    </div>
+    """
+    return _send_email(candidate_email, subject, html)
+
+
 def send_verification_code(to: str, code: str) -> bool:
     """Отправляет 6-значный код подтверждения email при регистрации (SEC-11)."""
     subject = "Ваш код подтверждения регистрации в HireLens"

@@ -18,7 +18,7 @@ import RecommendationBadge from '../components/RecommendationBadge'
 import Spinner from '../components/Spinner'
 import { useT } from '../i18n'
 import { useAuth } from '../hooks/useAuth'
-import { GripVertical, Inbox, Mic, CheckCircle, UserCheck, UserX } from 'lucide-react'
+import { GripVertical, Inbox, Mic, CheckCircle, UserCheck, UserX, CalendarClock } from 'lucide-react'
 
 // Иконки и цвета колонок по статусу (эмодзи из бэкенда не используем —
 // они по-разному рендерятся на разных ОС и выглядят неаккуратно в B2B).
@@ -26,6 +26,7 @@ const COLUMN_META = {
   applied:      { icon: Inbox,       color: 'text-blue-500' },
   interviewing: { icon: Mic,         color: 'text-amber-500' },
   completed:    { icon: CheckCircle, color: 'text-slate-400' },
+  invited:      { icon: CalendarClock, color: 'text-purple-500' },
   hired:        { icon: UserCheck,   color: 'text-green-500' },
   rejected:     { icon: UserX,       color: 'text-red-500' },
 }
@@ -33,6 +34,7 @@ const STATUS_LABEL_KEYS = {
   applied: 'status.applied',
   interviewing: 'status.interviewing',
   completed: 'status.completed',
+  invited: 'status.invited',
   hired: 'status.hired',
   rejected: 'status.rejected',
 }
