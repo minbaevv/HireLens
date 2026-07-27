@@ -16,6 +16,7 @@ from app.core.audit import record_audit
 from app.core.config import settings
 from app.core.db import get_db
 from app.core.payments import PAYMENT_INFO
+from app.core.plans import active_jobs_count, candidates_this_month, limits_for
 from app.models.models import Company, PaymentReceipt
 
 router = APIRouter(prefix="/billing", tags=["billing"])
@@ -33,6 +34,12 @@ class BillingStatus(BaseModel):
     is_free: bool
     is_superadmin: bool
     payment_info: dict
+    # Использование квот текущего месяца (баннер лимита на дашборде).
+    # None в *_limit = безлимит.
+    candidates_used: int = 0
+    candidates_limit: int | None = None
+    jobs_used: int = 0
+    jobs_limit: int | None = None
 
 
 class ReceiptOut(BaseModel):
@@ -67,6 +74,9 @@ def get_my_billing(
     days_left = None
     if not is_free and company.plan_expires_at is not None:
         days_left = (company.plan_expires_at - datetime.now(timezone.utc).replace(tzinfo=None)).days
+    # Квоты берём из того же источника, что и enforcement (app.core.plans),
+    # чтобы цифра на дашборде не расходилась с реальной блокировкой заявок.
+    plan_limits = limits_for(company)
     return BillingStatus(
         plan=plan,
         plan_expires_at=company.plan_expires_at.isoformat() if company.plan_expires_at else None,
@@ -75,6 +85,10 @@ def get_my_billing(
         is_free=is_free,
         is_superadmin=(company.email or "").lower() in settings.superadmin_emails,
         payment_info=PAYMENT_INFO,
+        candidates_used=candidates_this_month(db, company.id),
+        candidates_limit=plan_limits["max_candidates_per_month"],
+        jobs_used=active_jobs_count(db, company.id),
+        jobs_limit=plan_limits["max_active_jobs"],
     )
 
 

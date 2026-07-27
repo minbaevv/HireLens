@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import api from '../api/client'
-import { Briefcase, Users, TrendingUp, CheckCircle, UserCheck, UserX, BarChart2, Target, AlertTriangle } from 'lucide-react'
+import { Briefcase, Users, TrendingUp, CheckCircle, UserCheck, UserX, BarChart2, Target, AlertTriangle, Gauge } from 'lucide-react'
 import Spinner from '../components/Spinner'
 import Onboarding from '../components/Onboarding'
 import OnboardingChecklist from '../components/OnboardingChecklist'
@@ -44,6 +44,7 @@ export default function DashboardPage() {
   const [candidates, setCandidates] = useState([])
   const [accuracy, setAccuracy] = useState(null)
   const [reviewCount, setReviewCount] = useState(0)
+  const [billing, setBilling] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(null)
   const [showOnboarding, setShowOnboarding] = useState(false)
@@ -54,12 +55,14 @@ export default function DashboardPage() {
       api.get('/candidates', { params: { page: 1, page_size: 5, sort_by: 'created_at', order: 'desc' } }),
       api.get('/analytics/ai-accuracy').catch(() => ({ data: null })),
       api.get('/candidates', { params: { page: 1, page_size: 1, requires_review: true } }).catch(() => ({ data: { total: 0 } })),
+      api.get('/billing/me').catch(() => ({ data: null })),
     ])
-      .then(([analytics, cands, acc, review]) => {
+      .then(([analytics, cands, acc, review, bill]) => {
         setData(analytics.data)
         setCandidates(cands.data.items)
         setAccuracy(acc.data)
         setReviewCount(review.data?.total ?? 0)
+        setBilling(bill.data)
         // Показываем онбординг если нет вакансий и не был показан раньше
         if (analytics.data.total_jobs === 0 && !localStorage.getItem('onboarding_done')) {
           setShowOnboarding(true)
@@ -91,6 +94,15 @@ export default function DashboardPage() {
     { label: t('dashboard.statHired'),      value: data.hired_count,      sub: t('dashboard.hireRate', { rate: data.hire_rate }),               icon: UserCheck,  color: 'bg-green-50 text-green-600 dark:bg-green-500/15 dark:text-green-300' },
     { label: t('dashboard.statAvgScore'),   value: data.avg_score ?? '—', sub: t('dashboard.completedCount', { count: data.completed_interviews }), icon: TrendingUp, color: 'bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300' },
   ]
+
+  // Квота кандидатов текущего месяца (данные из /billing/me).
+  // Баннер появляется с 80% — жёлтый, при исчерпании лимита — красный.
+  // candidates_limit === null означает безлимит — баннер не показываем.
+  const quotaLimit = billing?.candidates_limit ?? null
+  const quotaUsed = billing?.candidates_used ?? 0
+  const quotaPct = quotaLimit ? Math.min(100, Math.round((quotaUsed / quotaLimit) * 100)) : 0
+  const quotaExceeded = quotaLimit != null && quotaUsed >= quotaLimit
+  const showQuota = quotaLimit != null && quotaLimit > 0 && quotaPct >= 80
 
   const pieData = data.by_status.map(s => ({
     name: t(STATUS_LABEL_KEYS[s.status]) ?? s.status,
@@ -154,6 +166,46 @@ export default function DashboardPage() {
           </div>
         ))}
       </div>
+
+      {/* Лимит кандидатов по тарифу: предупреждение с 80%, красное при исчерпании */}
+      {showQuota && (
+        <div className={`card p-5 mb-8 flex items-start gap-4 ${
+          quotaExceeded
+            ? 'bg-red-50 border-red-200 dark:bg-red-500/10 dark:border-red-500/30'
+            : 'bg-amber-50 border-amber-200 dark:bg-amber-500/10 dark:border-amber-500/30'
+        }`}>
+          <div className={`inline-flex p-2.5 rounded-xl shrink-0 ${
+            quotaExceeded
+              ? 'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-300'
+              : 'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-300'
+          }`}>
+            <Gauge className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <p className={`text-sm font-semibold ${
+                quotaExceeded ? 'text-red-800 dark:text-red-300' : 'text-amber-800 dark:text-amber-300'
+              }`}>
+                {quotaExceeded ? t('dashboard.quotaExceeded') : t('dashboard.quotaWarning')}
+              </p>
+              <Link to="/billing" className={`text-sm font-medium whitespace-nowrap hover:underline ${
+                quotaExceeded ? 'text-red-700 dark:text-red-400' : 'text-amber-700 dark:text-amber-400'
+              }`}>
+                {t('dashboard.quotaCta')}
+              </Link>
+            </div>
+            <p className="text-xs text-muted mt-1">
+              {t('dashboard.quotaUsed', { used: quotaUsed, limit: quotaLimit })}
+              {!quotaExceeded && ` · ${t('dashboard.quotaLeft', { left: quotaLimit - quotaUsed })}`}
+            </p>
+            <div className="h-2 bg-surface-muted rounded-full overflow-hidden mt-2">
+              <div className={`h-full rounded-full transition-all ${quotaExceeded ? 'bg-red-500' : 'bg-amber-500'}`}
+                style={{ width: `${quotaPct}%` }} />
+            </div>
+            <p className="text-xs text-faint mt-1">{t('dashboard.quotaReset')}</p>
+          </div>
+        </div>
+      )}
 
       {/* AI accuracy + очередь ручной проверки */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
