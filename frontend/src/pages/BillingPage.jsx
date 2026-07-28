@@ -65,7 +65,7 @@ export default function BillingPage() {
         <div className="inline-flex p-2 rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300">
           <CreditCard className="w-6 h-6" />
         </div>
-        <h1 className="text-2xl font-bold text-content">{t('billing.title')}</h1>
+        <h1 className="page-title">{t('billing.title')}</h1>
       </div>
       {data?.is_free && <p className="text-muted mb-6">{t('billing.freeDesc')}</p>}
 
@@ -100,7 +100,7 @@ export default function BillingPage() {
       </div>
 
       <div className="card p-6 mb-6">
-        <h2 className="font-semibold text-content mb-4">{t('billing.howToPay')}</h2>
+        <h2 className="section-title mb-4">{t('billing.howToPay')}</h2>
         {pi.note && <p className="text-sm text-muted mb-4">{pi.note}</p>}
         <dl className="space-y-3 text-sm">
           <div className="flex items-center gap-3"><Building2 className="w-4 h-4 text-brand-600 dark:text-brand-300 flex-shrink-0" /><span className="text-muted w-36">{t('billing.bank')}</span><span className="text-content font-medium">{pi.bank}</span></div>
@@ -119,7 +119,7 @@ export default function BillingPage() {
       <div className="card p-6">
         <div className="flex items-center gap-2 mb-4">
           <Upload className="w-5 h-5 text-brand-600 dark:text-brand-300" />
-          <h2 className="font-semibold text-content">{t('billing.uploadReceipt')}</h2>
+          <h2 className="section-title">{t('billing.uploadReceipt')}</h2>
         </div>
         <form onSubmit={submitReceipt} className="flex flex-col sm:flex-row sm:items-end gap-3">
           <label className="flex-1">

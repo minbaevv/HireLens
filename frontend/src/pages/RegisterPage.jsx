@@ -41,8 +41,8 @@ export default function RegisterPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-brand-600 rounded-2xl mb-4 shadow-lg">
             <Bot className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-content">{t('register.title')}</h1>
-          <p className="text-muted mt-1">{t('register.subtitle')}</p>
+          <h1 className="page-title">{t('register.title')}</h1>
+          <p className="page-subtitle">{t('register.subtitle')}</p>
         </div>
         <div className="card p-8 backdrop-blur-xl bg-surface/90">
           <form onSubmit={handleSubmit} className="space-y-5">

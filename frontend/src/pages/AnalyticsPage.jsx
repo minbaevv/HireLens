@@ -59,8 +59,8 @@ export default function AnalyticsPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-content font-display">{t('nav.analytics')}</h1>
-        <p className="text-muted mt-1">{t('analytics.subtitle')}</p>
+        <h1 className="page-title">{t('nav.analytics')}</h1>
+        <p className="page-subtitle">{t('analytics.subtitle')}</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -74,7 +74,7 @@ export default function AnalyticsPage() {
         {/* По статусам */}
         {byStatus.length > 0 && (
           <div className="card p-6">
-            <h2 className="font-semibold text-content mb-4">{t('analytics.byStatusTitle')}</h2>
+            <h2 className="section-title mb-4">{t('analytics.byStatusTitle')}</h2>
             <div className="space-y-3">
               {byStatus.map(({ status, count }) => {
                 const pct = totalByStatus > 0 ? Math.round((count / totalByStatus) * 100) : 0
@@ -99,7 +99,7 @@ export default function AnalyticsPage() {
         {/* Топ вакансии */}
         {data.top_jobs && data.top_jobs.length > 0 && (
           <div className="card p-6">
-            <h2 className="font-semibold text-content mb-4">{t('analytics.topJobsTitle')}</h2>
+            <h2 className="section-title mb-4">{t('analytics.topJobsTitle')}</h2>
             <div className="space-y-3">
               {data.top_jobs.map((job) => (
                 <div key={job.job_id} className="flex items-center justify-between py-2 border-b border-line last:border-0">

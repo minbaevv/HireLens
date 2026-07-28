@@ -78,7 +78,7 @@ export default function JobDetailPage() {
       <div className="card p-6 mb-6">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-content">{job.title}</h1>
+            <h1 className="page-title">{job.title}</h1>
             <p className="text-sm text-muted mt-1">
               {t('jobs.createdAt')}: {fmtDate(job.created_at)}
             </p>

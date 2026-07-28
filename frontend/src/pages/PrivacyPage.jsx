@@ -72,18 +72,18 @@ export default function PrivacyPage() {
         <div className="inline-flex p-2 rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300">
           <Shield className="w-6 h-6" />
         </div>
-        <h1 className="text-2xl font-bold text-content">{t('privacy.title')}</h1>
+        <h1 className="page-title">{t('privacy.title')}</h1>
       </div>
       <p className="text-muted mb-6">{t('privacy.subtitle')}</p>
 
       <div className="card p-6 mb-6">
-        <div className="flex items-center gap-2 mb-2"><Download className="w-5 h-5 text-brand-600 dark:text-brand-300" /><h2 className="font-semibold text-content">{t('privacy.exportTitle')}</h2></div>
+        <div className="flex items-center gap-2 mb-2"><Download className="w-5 h-5 text-brand-600 dark:text-brand-300" /><h2 className="section-title">{t('privacy.exportTitle')}</h2></div>
         <p className="text-sm text-muted mb-4">{t('privacy.exportDesc')}</p>
         <button onClick={exportData} disabled={exporting} className="btn-primary px-4 py-2 inline-flex items-center gap-2"><Download className="w-4 h-4" />{exporting ? '…' : t('privacy.exportBtn')}</button>
       </div>
 
       <div className="card p-6 mb-6">
-        <div className="flex items-center gap-2 mb-2"><Clock className="w-5 h-5 text-brand-600 dark:text-brand-300" /><h2 className="font-semibold text-content">{t('privacy.retentionTitle')}</h2></div>
+        <div className="flex items-center gap-2 mb-2"><Clock className="w-5 h-5 text-brand-600 dark:text-brand-300" /><h2 className="section-title">{t('privacy.retentionTitle')}</h2></div>
         <p className="text-sm text-muted mb-4">{t('privacy.retentionDesc')}</p>
         <div className="flex items-center gap-3">
           <input type="number" min="1" max="3650" value={retention} onChange={e => setRetention(e.target.value)} placeholder={t('privacy.retentionForever')} className="input w-40" />

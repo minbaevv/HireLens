@@ -50,8 +50,8 @@ export default function LoginPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-[#0b1e3f] rounded-2xl mb-4 shadow-lg">
             <Logo className="w-10 h-10" title="HireLens" gradId="hl-login" />
           </div>
-          <h1 className="text-2xl font-bold text-content">HireLens</h1>
-          <p className="text-muted mt-1">{t('login.subtitle')}</p>
+          <h1 className="page-title">HireLens</h1>
+          <p className="page-subtitle">{t('login.subtitle')}</p>
         </div>
         <div className="card p-8 backdrop-blur-xl bg-surface/90">
           <form onSubmit={handleSubmit} className="space-y-5">

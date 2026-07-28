@@ -67,7 +67,7 @@ export default function CodingCard({ candidateId }) {
     <div className="card p-6 mb-6">
       <div className="flex items-center gap-2 mb-1">
         <Code2 className="w-5 h-5 text-brand-600" />
-        <h2 className="font-semibold text-content">{t('coding.cardTitle')}</h2>
+        <h2 className="section-title">{t('coding.cardTitle')}</h2>
       </div>
       <p className="text-xs text-faint mb-4">{t('coding.cardHint')}</p>
 

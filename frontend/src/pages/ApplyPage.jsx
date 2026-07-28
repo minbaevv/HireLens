@@ -139,8 +139,8 @@ export default function ApplyPage() {
               ? <img src={job.company_logo_url} alt={job.company_name || ''} className="w-full h-full object-contain" />
               : <Logo className="w-9 h-9" title="HireLens" />}
           </div>
-          <h1 className="text-2xl font-bold text-content">{job.title}</h1>
-          <p className="text-muted mt-1">{t('apply.subtitle')}</p>
+          <h1 className="page-title">{job.title}</h1>
+          <p className="page-subtitle">{t('apply.subtitle')}</p>
         </div>
         <div className="card p-5 mb-5">
           <h2 className="flex items-center gap-1.5 text-sm font-semibold text-content mb-2"><Info className="w-4 h-4 text-brand-500" />{t('apply.about')}</h2>

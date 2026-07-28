@@ -14,6 +14,11 @@
     --color-content: 17 24 39;          /* gray-900 */
     --color-muted: 107 114 128;         /* gray-500 */
     --color-faint: 156 163 175;         /* gray-400 */
+    --color-accent-glow: 59 130 246;    /* brand-500 */
+    /* Уровни возвышения: e1 — карточка, e2 — hover, e3 — модалка. */
+    --shadow-e1: 0 1px 2px 0 rgb(15 23 42 / 0.05), 0 1px 3px 0 rgb(15 23 42 / 0.06);
+    --shadow-e2: 0 4px 12px -2px rgb(15 23 42 / 0.10), 0 2px 6px -2px rgb(15 23 42 / 0.06);
+    --shadow-e3: 0 18px 40px -12px rgb(15 23 42 / 0.18), 0 6px 14px -6px rgb(15 23 42 / 0.10);
   }
 
   .dark {
@@ -24,10 +29,51 @@
     --color-content: 241 245 249;       /* slate-100 */
     --color-muted: 148 163 184;         /* slate-400 */
     --color-faint: 100 116 139;         /* slate-500 */
+    --color-accent-glow: 56 189 248;    /* sky-400 */
+    --shadow-e1: 0 1px 2px 0 rgb(0 0 0 / 0.40);
+    --shadow-e2: 0 4px 14px -2px rgb(0 0 0 / 0.50);
+    --shadow-e3: 0 20px 45px -12px rgb(0 0 0 / 0.65);
   }
 
   body {
     @apply bg-canvas text-content antialiased;
+    /* Inter: одноэтажная a и прямая l — читаемее в интерфейсе */
+    font-feature-settings: 'cv05' 1, 'cv11' 1, 'ss01' 1;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Все заголовки — акцидентным Manrope с плотным трекингом.
+     Задаётся один раз здесь — поэтому единообразно на всех страницах. */
+  h1, h2, h3, h4 {
+    @apply font-display tracking-[-0.015em];
+  }
+
+  /* Единый вид таблиц внутри карточек — без правки самих страниц */
+  .card thead th {
+    @apply text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-muted;
+  }
+  .card tbody tr {
+    @apply transition-colors duration-fast;
+  }
+  /* Табличные цифры: колонки баллов и дат перестают «прыгать» */
+  .card tbody td, .stat-value, .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+
+  input[type='checkbox'], input[type='radio'] {
+    accent-color: #2563eb;
+    width: 1rem;
+    height: 1rem;
+    cursor: pointer;
+  }
+
+  ::selection {
+    background-color: rgb(37 99 235 / 0.22);
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--color-line)) transparent;
   }
 
   /* Доступность: уважаем системную настройку «уменьшить движение» —
@@ -45,20 +91,41 @@
 }
 
 @layer components {
+  /* ── Типографика страниц — единая для всех экранов ── */
+  .page-title {
+    @apply font-display text-[1.75rem] leading-[1.15] font-bold tracking-[-0.02em] text-content;
+  }
+  .page-subtitle {
+    @apply text-[0.9375rem] text-muted mt-1;
+  }
+  .section-title {
+    @apply font-display text-base font-semibold tracking-[-0.01em] text-content;
+  }
+  .stat-value {
+    @apply font-display text-[1.75rem] leading-none font-bold tracking-[-0.02em] text-content;
+  }
+  /* Шапка колонки таблицы */
+  .th-cell {
+    @apply text-left text-[11px] font-semibold text-muted uppercase tracking-[0.08em] px-6 py-3.5;
+  }
+  /* Третичная кнопка без фона */
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl text-muted hover:bg-surface-muted hover:text-content transition-colors;
+  }
   .btn-primary {
-    @apply inline-flex items-center gap-2 px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 active:bg-brand-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas;
+    @apply inline-flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl shadow-sm active:scale-[0.98] hover:bg-brand-700 active:bg-brand-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas;
   }
   .btn-secondary {
-    @apply inline-flex items-center gap-2 px-4 py-2 bg-surface text-content text-sm font-medium rounded-lg border border-line hover:bg-surface-muted active:bg-surface-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas;
+    @apply inline-flex items-center gap-2 px-4 py-2.5 bg-surface text-content text-sm font-semibold rounded-xl active:scale-[0.98] border border-line hover:bg-surface-muted active:bg-surface-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas;
   }
   .btn-danger {
-    @apply inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas;
+    @apply inline-flex items-center gap-2 px-4 py-2.5 bg-red-600 text-white text-sm font-semibold rounded-xl shadow-sm active:scale-[0.98] hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas;
   }
   .input {
-    @apply w-full px-3 py-2 text-sm border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-shadow bg-surface text-content placeholder:text-faint;
+    @apply w-full px-3.5 py-2.5 text-sm border border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-shadow bg-surface text-content placeholder:text-faint;
   }
   .card {
-    @apply bg-surface rounded-xl border border-line shadow-sm;
+    @apply bg-surface rounded-2xl border border-line shadow-e1;
   }
   .badge-hire {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300;

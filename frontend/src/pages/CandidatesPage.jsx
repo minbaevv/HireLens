@@ -34,6 +34,20 @@ function waPhone(phone) {
   return d
 }
 
+// Аватар кандидата: фото, а если его нет — инициалы на фирменном фоне.
+// Раньше строки без фото оставались без аватара и список выглядел рваным.
+function Avatar({ name, src, size = 'w-9 h-9' }) {
+  if (src) {
+    return <img src={src} alt="" className={`${size} rounded-full object-cover border border-line shrink-0`} />
+  }
+  const initials = String(name || '?').trim().split(/\s+/).slice(0, 2).map(w => w.charAt(0)).join('').toUpperCase()
+  return (
+    <div className={`${size} rounded-full shrink-0 flex items-center justify-center text-xs font-semibold bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300`}>
+      {initials}
+    </div>
+  )
+}
+
 export default function CandidatesPage() {
   const { t, lang } = useT()
   const navigate = useNavigate()
@@ -200,8 +214,8 @@ export default function CandidatesPage() {
     <div className="p-8">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-content">{t('nav.candidates')}</h1>
-          <p className="text-muted mt-1">{t('candidates.countSuffix', { count: data.total })}</p>
+          <h1 className="page-title">{t('nav.candidates')}</h1>
+          <p className="page-subtitle">{t('candidates.countSuffix', { count: data.total })}</p>
         </div>
         <div className="relative">
           <button
@@ -356,16 +370,16 @@ export default function CandidatesPage() {
                       />
                     </th>
                   )}
-                  <th className="text-left text-xs font-semibold text-muted uppercase tracking-wide px-6 py-3">{t('candidates.colCandidate')}</th>
-                  <th className="text-left text-xs font-semibold text-muted uppercase tracking-wide px-6 py-3">{t('candidates.colStatus')}</th>
+                  <th className="th-cell">{t('candidates.colCandidate')}</th>
+                  <th className="th-cell">{t('candidates.colStatus')}</th>
                   <th
-                    className="text-left text-xs font-semibold text-muted uppercase tracking-wide px-6 py-3 cursor-pointer select-none hover:text-content"
+                    className="th-cell cursor-pointer select-none hover:text-content"
                     onClick={() => toggleSort('score')}
                   >{t('candidates.colScore')} <SortIcon col="score" /></th>
-                  <th className="text-left text-xs font-semibold text-muted uppercase tracking-wide px-6 py-3" title={t('candidates.preScreenHint')}>{t('candidates.colPreScreen')}</th>
-                  <th className="text-left text-xs font-semibold text-muted uppercase tracking-wide px-6 py-3">{t('candidates.colRecommendation')}</th>
+                  <th className="th-cell" title={t('candidates.preScreenHint')}>{t('candidates.colPreScreen')}</th>
+                  <th className="th-cell">{t('candidates.colRecommendation')}</th>
                   <th
-                    className="text-left text-xs font-semibold text-muted uppercase tracking-wide px-6 py-3 cursor-pointer select-none hover:text-content"
+                    className="th-cell cursor-pointer select-none hover:text-content"
                     onClick={() => toggleSort('created_at')}
                   >{t('candidates.colDate')} <SortIcon col="created_at" /></th>
                   <th className="px-6 py-3"></th>
@@ -381,7 +395,7 @@ export default function CandidatesPage() {
                     )}
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        {c.photo_url && <img src={c.photo_url} alt="" className="w-9 h-9 rounded-full object-cover border border-line shrink-0" />}
+                        <Avatar name={c.name} src={c.photo_url} />
                         <div>
                           <p className="text-sm font-medium text-content">{c.name}</p>
                           <p className="text-xs text-faint">{c.email}</p>
@@ -431,7 +445,7 @@ export default function CandidatesPage() {
             {data.items.map(c => (
               <Link key={c.id} to={`/candidates/${c.id}`} className="card block p-4 active:bg-surface-muted transition-colors">
                 <div className="flex items-start justify-between gap-3">
-                  {c.photo_url && <img src={c.photo_url} alt="" className="w-10 h-10 rounded-full object-cover border border-line shrink-0" />}
+                  <Avatar name={c.name} src={c.photo_url} size="w-10 h-10" />
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-content truncate">{c.name}</p>
                     <p className="text-xs text-faint truncate">{c.email}</p>

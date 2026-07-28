@@ -76,7 +76,7 @@ export default function CopilotPage() {
             <Sparkles className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-content">{t('copilot.title')}</h1>
+            <h1 className="page-title">{t('copilot.title')}</h1>
             <p className="text-sm text-muted">{t('copilot.subtitle')}</p>
           </div>
         </div>

@@ -48,8 +48,8 @@ export default function CareersPage() {
               <Bot className="w-7 h-7 text-white" />
             </div>
           )}
-          <h1 className="text-2xl font-bold text-content">{data.company_name}</h1>
-          <p className="text-muted mt-1">{t('careers.openPositions')}</p>
+          <h1 className="page-title">{data.company_name}</h1>
+          <p className="page-subtitle">{t('careers.openPositions')}</p>
         </div>
 
         {jobs.length === 0 ? (

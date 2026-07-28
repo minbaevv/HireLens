@@ -190,8 +190,8 @@ export default function KanbanPage() {
     >
       <div className="p-8">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-content">{t('kanban.title')}</h1>
-          <p className="text-muted mt-1">{t('candidates.countSuffix', { count: board.total })}</p>
+          <h1 className="page-title">{t('kanban.title')}</h1>
+          <p className="page-subtitle">{t('candidates.countSuffix', { count: board.total })}</p>
         </div>
 
         <div className="flex gap-4 overflow-x-auto pb-4 items-stretch">

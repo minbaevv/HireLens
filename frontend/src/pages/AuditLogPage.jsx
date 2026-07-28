@@ -99,7 +99,7 @@ export default function AuditLogPage() {
       <div className="flex items-center gap-3">
         <ScrollText className="w-6 h-6 text-content" />
         <div>
-          <h1 className="text-xl font-semibold text-content">{t('audit.title')}</h1>
+          <h1 className="page-title">{t('audit.title')}</h1>
           <p className="text-sm text-muted">{t('audit.subtitle')}</p>
         </div>
       </div>

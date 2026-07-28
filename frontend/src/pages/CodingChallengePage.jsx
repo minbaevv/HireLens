@@ -46,7 +46,7 @@ export default function CodingChallengePage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-canvas px-4">
         <div className="text-center">
-          <h1 className="text-xl font-bold text-content">{t('codingPublic.notFound')}</h1>
+          <h1 className="page-title">{t('codingPublic.notFound')}</h1>
           <p className="text-muted mt-2">{t('codingPublic.notFoundHint')}</p>
         </div>
       </div>
@@ -69,12 +69,12 @@ export default function CodingChallengePage() {
         {done ? (
           <div className="card p-8 text-center">
             <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-3" />
-            <h1 className="text-xl font-bold text-content">{t('codingPublic.submittedTitle')}</h1>
+            <h1 className="page-title">{t('codingPublic.submittedTitle')}</h1>
             <p className="text-muted mt-2">{t('codingPublic.submittedMsg')}</p>
           </div>
         ) : (
           <>
-            <h1 className="text-2xl font-bold text-content mb-2">{challenge.title}</h1>
+            <h1 className="page-title mb-2">{challenge.title}</h1>
             <div className="flex items-center gap-2 flex-wrap text-xs text-muted mb-6">
               <span className="px-2 py-0.5 rounded-full bg-surface-muted">{challenge.language}</span>
               <span className="px-2 py-0.5 rounded-full bg-surface-muted">{t('codingPublic.difficulty')}: {challenge.difficulty}</span>

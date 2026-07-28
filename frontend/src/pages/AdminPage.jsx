@@ -65,7 +65,7 @@ export default function AdminPage() {
         <div className="inline-flex p-2 rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300">
           <ShieldCheck className="w-6 h-6" />
         </div>
-        <h1 className="text-2xl font-bold text-content">{t('admin.title')}</h1>
+        <h1 className="page-title">{t('admin.title')}</h1>
       </div>
       <p className="text-muted mb-6">{t('admin.subtitle')}</p>
 

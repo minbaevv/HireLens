@@ -211,8 +211,8 @@ export default function JobsPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-content">{t('nav.jobs')}</h1>
-          <p className="text-muted mt-1">{t('jobs.countSuffix', { count: jobs.length })}</p>
+          <h1 className="page-title">{t('nav.jobs')}</h1>
+          <p className="page-subtitle">{t('jobs.countSuffix', { count: jobs.length })}</p>
         </div>
         {canWrite && (
         <button className="btn-primary" onClick={() => setModal('create')}>
@@ -253,11 +253,11 @@ export default function JobsPage() {
       ) : (
         <div className="space-y-3">
           {jobs.map(job => (
-            <div key={job.id} className="card p-5">
+            <div key={job.id} className="card p-5 transition-colors hover:border-brand-500/40">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate('/jobs/' + job.id)}>
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-content">{job.title}</h3>
+                    <h3 className="section-title">{job.title}</h3>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                       job.is_active ? 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-300' : 'bg-surface-muted text-muted'
                     }`}>{job.is_active ? t('jobs.statusActive') : t('jobs.statusClosed')}</span>

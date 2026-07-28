@@ -208,7 +208,7 @@ export default function IntegrationsPage() {
           <Plug className="w-5 h-5" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-content">{t('integrations.title')}</h1>
+          <h1 className="page-title">{t('integrations.title')}</h1>
           <p className="text-sm text-muted">{t('integrations.subtitle')}</p>
         </div>
       </div>

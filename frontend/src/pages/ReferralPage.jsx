@@ -27,7 +27,7 @@ export default function ReferralPage() {
         <div className="inline-flex p-2 rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300">
           <Gift className="w-6 h-6" />
         </div>
-        <h1 className="text-2xl font-bold text-content">{t('referral.title')}</h1>
+        <h1 className="page-title">{t('referral.title')}</h1>
       </div>
       <p className="text-muted mb-6">{t('referral.subtitle')}</p>
 
@@ -54,7 +54,7 @@ export default function ReferralPage() {
       </div>
 
       <div className="card p-6">
-        <h2 className="font-semibold text-content mb-3">{t('referral.howTitle')}</h2>
+        <h2 className="section-title mb-3">{t('referral.howTitle')}</h2>
         <ol className="space-y-2 text-sm text-muted list-decimal list-inside">
           <li>{t('referral.how1')}</li>
           <li>{t('referral.how2')}</li>

@@ -76,7 +76,7 @@ export default function BrandingPage() {
         <div className="inline-flex p-2 rounded-xl bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-300">
           <Palette className="w-6 h-6" />
         </div>
-        <h1 className="text-2xl font-bold text-content">{t('branding.title')}</h1>
+        <h1 className="page-title">{t('branding.title')}</h1>
       </div>
       <p className="text-muted mb-6">{t('branding.subtitle')}</p>
 

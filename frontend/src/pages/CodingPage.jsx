@@ -132,7 +132,7 @@ export default function CodingPage() {
     <div className="p-8 max-w-5xl mx-auto">
       <div className="flex items-center gap-3 mb-1">
         <Code2 className="w-6 h-6 text-brand-600" />
-        <h1 className="text-2xl font-bold text-content">{t('coding.title')}</h1>
+        <h1 className="page-title">{t('coding.title')}</h1>
       </div>
       <p className="text-sm text-muted mb-6">{t('coding.subtitle')}</p>
 
@@ -200,7 +200,7 @@ function ChallengesTab({ challenges, t, canWrite, onCreate, onEdit, onToggle, on
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-semibold text-content truncate">{c.title}</h3>
+                    <h3 className="section-title truncate">{c.title}</h3>
                     <span className="text-xs px-2 py-0.5 rounded-full bg-surface-muted text-muted">{c.language}</span>
                     <span className="text-xs px-2 py-0.5 rounded-full bg-surface-muted text-muted">{diffLabel(c.difficulty, t)}</span>
                     {!c.is_active && <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">{t('coding.inactiveLabel')}</span>}

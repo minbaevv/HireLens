@@ -182,7 +182,7 @@ export default function LandingPage() {
               <div className="w-11 h-11 bg-brand-50 dark:bg-brand-500/15 rounded-xl flex items-center justify-center mb-4">
                 <Icon className="w-5 h-5 text-brand-600 dark:text-brand-300" />
               </div>
-              <h3 className="font-semibold text-content mb-2">{title}</h3>
+              <h3 className="section-title mb-2">{title}</h3>
               <p className="text-muted text-sm">{desc}</p>
             </div>
           ))}
@@ -200,7 +200,7 @@ export default function LandingPage() {
                 <div className="w-12 h-12 bg-brand-50 dark:bg-brand-500/15 rounded-xl flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
                   <Icon className="w-6 h-6 text-brand-600 dark:text-brand-300" />
                 </div>
-                <h3 className="font-semibold text-content mb-2">{f.title}</h3>
+                <h3 className="section-title mb-2">{f.title}</h3>
                 <p className="text-muted text-sm">{f.description}</p>
               </div>
             )
@@ -228,7 +228,7 @@ export default function LandingPage() {
                 <div className="w-11 h-11 bg-brand-50 dark:bg-brand-500/15 rounded-xl flex items-center justify-center mb-4">
                   <Icon className="w-5 h-5 text-brand-600 dark:text-brand-300" />
                 </div>
-                <h3 className="font-semibold text-content mb-2">{title}</h3>
+                <h3 className="section-title mb-2">{title}</h3>
                 <p className="text-muted text-sm">{desc}</p>
               </div>
             ))}

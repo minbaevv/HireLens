@@ -196,7 +196,7 @@ export default function CandidateDetailPage() {
       <div className="card p-6 mb-4">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-xl font-bold text-content">{candidate.name}</h1>
+            <h1 className="page-title">{candidate.name}</h1>
             <p className="text-muted text-sm mt-0.5">{candidate.email}</p>
             {candidate.phone && (
               <p className="text-muted text-sm mt-0.5">
@@ -235,7 +235,7 @@ export default function CandidateDetailPage() {
         </div>
         {inviteOpen && (
           <div className="mt-4 pt-4 border-t border-line space-y-3">
-            <h3 className="font-semibold text-content">{t('candidateDetail.inviteTitle')}</h3>
+            <h3 className="section-title">{t('candidateDetail.inviteTitle')}</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm text-muted mb-1">{t('candidateDetail.inviteDate')}</label>
@@ -268,7 +268,7 @@ export default function CandidateDetailPage() {
 
       {candidate.summary && (
         <div className="card p-6 mb-4">
-          <h2 className="font-semibold text-content mb-3">{t('candidateDetail.aiSummaryTitle')}</h2>
+          <h2 className="section-title mb-3">{t('candidateDetail.aiSummaryTitle')}</h2>
           <p className="text-sm text-content leading-relaxed">{candidate.summary}</p>
         </div>
       )}
@@ -375,7 +375,7 @@ export default function CandidateDetailPage() {
       {candidate.anti_cheat_score != null && (
         <div className="card p-6 mb-4">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-content">{t('candidateDetail.antiCheatTitle')}</h2>
+            <h2 className="section-title">{t('candidateDetail.antiCheatTitle')}</h2>
             <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
               candidate.anti_cheat_score >= 60 ? 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300' :
               candidate.anti_cheat_score >= 30 ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-500/15 dark:text-yellow-300' : 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-300'
@@ -404,7 +404,7 @@ export default function CandidateDetailPage() {
       <div className="card p-6 mb-4">
         <div className="flex items-center gap-2 mb-1">
           <ClipboardCheck className="w-4 h-4 text-brand-600" />
-          <h2 className="font-semibold text-content">{t('candidateDetail.finalDecisionTitle')}</h2>
+          <h2 className="section-title">{t('candidateDetail.finalDecisionTitle')}</h2>
         </div>
         <p className="text-xs text-faint mb-4">{t('candidateDetail.finalDecisionHint')}</p>
 
@@ -463,7 +463,7 @@ export default function CandidateDetailPage() {
         <div className="card p-6 mb-4">
           <div className="flex items-center gap-2 mb-4">
             <MessageSquare className="w-4 h-4 text-brand-600" />
-            <h2 className="font-semibold text-content">{t('candidateDetail.transcriptTitle')}</h2>
+            <h2 className="section-title">{t('candidateDetail.transcriptTitle')}</h2>
           </div>
           <div className="space-y-4">
             {transcript.messages.map(m => (
@@ -482,7 +482,7 @@ export default function CandidateDetailPage() {
         <div className="card p-6">
           <div className="flex items-center gap-2 mb-3">
             <FileText className="w-4 h-4 text-faint" />
-            <h2 className="font-semibold text-content">{t('candidateDetail.resumeTitle')}</h2>
+            <h2 className="section-title">{t('candidateDetail.resumeTitle')}</h2>
           </div>
           <pre className="text-sm text-content whitespace-pre-wrap font-sans leading-relaxed">{candidate.resume_text}</pre>
         </div>

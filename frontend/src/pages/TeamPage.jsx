@@ -87,7 +87,7 @@ export default function TeamPage() {
           <UserCog className="w-5 h-5" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-content">{t('team.title')}</h1>
+          <h1 className="page-title">{t('team.title')}</h1>
           <p className="text-sm text-muted">{t('team.subtitle')}</p>
         </div>
       </div>

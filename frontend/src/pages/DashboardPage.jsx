@@ -34,7 +34,7 @@ const STATUS_LABEL_KEYS = {
 function StatValue({ value }) {
   const isNumeric = typeof value === 'number' && Number.isFinite(value)
   const animated = useCountUp(isNumeric ? value : 0)
-  return <p className="text-2xl font-bold text-content font-display">{isNumeric ? animated : value}</p>
+  return <p className="stat-value">{isNumeric ? animated : value}</p>
 }
 
 export default function DashboardPage() {
@@ -112,7 +112,7 @@ export default function DashboardPage() {
   const statusTotal = pieData.reduce((sum, s) => sum + s.value, 0)
 
   const barData = data.top_jobs.map(j => ({
-    name: j.title.length > 16 ? j.title.slice(0, 16) + '…' : j.title,
+    name: j.title.length > 24 ? j.title.slice(0, 24) + '…' : j.title,
     fullName: j.title,
     candidates: j.total_candidates,
     hired: j.hired_count,
@@ -147,8 +147,8 @@ export default function DashboardPage() {
     <div className="p-8">
       {showOnboarding && <Onboarding onDismiss={dismissOnboarding} />}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-content font-display">{t('nav.dashboard')}</h1>
-        <p className="text-muted mt-1">{t('dashboard.subtitle')}</p>
+        <h1 className="page-title">{t('nav.dashboard')}</h1>
+        <p className="page-subtitle">{t('dashboard.subtitle')}</p>
       </div>
 
       {/* Карточки статистики */}
@@ -156,7 +156,7 @@ export default function DashboardPage() {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {stats.map(({ label, value, sub, icon: Icon, color }, i) => (
-          <div key={label} className="card p-5 animate-fade-up" style={{ animationDelay: `${i * 80}ms` }}>
+          <div key={label} className="card card-lift p-5 animate-fade-up" style={{ animationDelay: `${i * 80}ms` }}>
             <div className={`inline-flex p-2.5 rounded-xl ${color} mb-3`}>
               <Icon className="w-5 h-5" />
             </div>
@@ -214,7 +214,7 @@ export default function DashboardPage() {
             <Target className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-2xl font-bold text-content">
+            <p className="stat-value">
               {accuracy && accuracy.total_with_feedback >= 5 ? `${accuracy.accuracy_rate}%` : '—'}
             </p>
             <p className="text-sm text-muted">{t('dashboard.statAiAccuracy')}</p>
@@ -250,7 +250,7 @@ export default function DashboardPage() {
         {/* Распределение по статусам — горизонтальные бары (унифицировано с Аналитикой) */}
         {pieData.length > 0 && (
           <div className="card p-6">
-            <h2 className="font-semibold text-content mb-4 flex items-center gap-2">
+            <h2 className="section-title mb-4 flex items-center gap-2">
               <BarChart2 className="w-4 h-4 text-faint" /> {t('dashboard.statusChartTitle')}
             </h2>
             <div className="space-y-3">
@@ -275,17 +275,19 @@ export default function DashboardPage() {
         {/* Bar — топ вакансии */}
         {barData.length > 0 && (
           <div className="card p-6">
-            <h2 className="font-semibold text-content mb-4 flex items-center gap-2">
+            <h2 className="section-title mb-4 flex items-center gap-2">
               <Briefcase className="w-4 h-4 text-faint" /> {t('dashboard.topJobsChartTitle')}
             </h2>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={barData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: chartTick }} />
-                <YAxis tick={{ fontSize: 11, fill: chartTick }} allowDecimals={false} />
+            {/* Горизонтальные бары: названия вакансий читаются целиком,
+                а не обрезаются под осью, как было при вертикальной компоновке. */}
+            <ResponsiveContainer width="100%" height={Math.max(200, barData.length * 58)}>
+              <BarChart layout="vertical" data={barData} margin={{ top: 4, right: 16, left: 4, bottom: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} horizontal={false} />
+                <XAxis type="number" tick={{ fontSize: 11, fill: chartTick }} allowDecimals={false} />
+                <YAxis type="category" dataKey="name" width={150} tick={{ fontSize: 11, fill: chartTick }} />
                 <Tooltip content={<BarTooltip />} cursor={{ fill: isDark ? '#1e293b' : '#f1f5f9' }} />
-                <Bar dataKey="candidates" name={t('dashboard.seriesCandidates')} fill="#3b82f6" radius={[4,4,0,0]} />
-                <Bar dataKey="hired" name={t('dashboard.seriesHired')} fill="#10b981" radius={[4,4,0,0]} />
+                <Bar dataKey="candidates" name={t('dashboard.seriesCandidates')} fill="#3b82f6" radius={[0,4,4,0]} />
+                <Bar dataKey="hired" name={t('dashboard.seriesHired')} fill="#10b981" radius={[0,4,4,0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -295,7 +297,7 @@ export default function DashboardPage() {
       {/* Последние кандидаты */}
       <div className="card">
         <div className="px-6 py-4 border-b border-line flex items-center justify-between">
-          <h2 className="font-semibold text-content">{t('dashboard.recentCandidates')}</h2>
+          <h2 className="section-title">{t('dashboard.recentCandidates')}</h2>
           <Link to="/candidates" className="text-sm text-brand-600 hover:underline">{t('dashboard.viewAll')}</Link>
         </div>
         {candidates.length === 0 ? (
@@ -313,7 +315,7 @@ export default function DashboardPage() {
                   <p className="text-xs text-faint">{c.email}</p>
                 </div>
                 {c.score != null && (
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full tnum ${
                     c.score >= 75 ? 'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300' :
                     c.score >= 50 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/15 dark:text-yellow-300' : 'bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300'
                   }`}>{Math.round(c.score)}</span>

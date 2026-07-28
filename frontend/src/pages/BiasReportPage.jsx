@@ -41,8 +41,8 @@ export default function BiasReportPage() {
     <div className="p-8">
       <div className="mb-8 flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-content">{t('bias.title')}</h1>
-          <p className="text-muted mt-1">{t('bias.subtitle')}</p>
+          <h1 className="page-title">{t('bias.title')}</h1>
+          <p className="page-subtitle">{t('bias.subtitle')}</p>
         </div>
         <select className="input max-w-xs" value={jobId} onChange={e => setJobId(e.target.value)}>
           <option value="">{t('bias.allJobs')}</option>
@@ -70,7 +70,7 @@ export default function BiasReportPage() {
             const max = top.length ? top[0][1] : 0
             return (
               <div className="card p-6 mb-8">
-                <h2 className="font-semibold text-content mb-4">{t('bias.topReasons')}</h2>
+                <h2 className="section-title mb-4">{t('bias.topReasons')}</h2>
                 <div className="space-y-2">
                   {top.map(([reason, count]) => (
                     <div key={reason} className="flex items-center gap-3">
@@ -87,7 +87,7 @@ export default function BiasReportPage() {
           })()}
 
           <div className="card p-6">
-            <h2 className="font-semibold text-content mb-4">{t('bias.flaggedListTitle')}</h2>
+            <h2 className="section-title mb-4">{t('bias.flaggedListTitle')}</h2>
             {(!data.items || data.items.length === 0) ? (
               <p className="text-sm text-faint text-center py-8">{t('bias.noFlags')}</p>
             ) : (

@@ -57,7 +57,7 @@ export default function VerifyEmailPage() {
     <div className="min-h-screen flex items-center justify-center bg-canvas px-4">
       <AnimatedBackground variant="auth" />
       <div className="relative z-10 card p-8 w-full max-w-md backdrop-blur-xl bg-surface/90">
-        <h1 className="text-2xl font-bold text-content mb-1">{t('verify.title')}</h1>
+        <h1 className="page-title mb-1">{t('verify.title')}</h1>
         <p className="text-sm text-muted mb-3">
           {t('verify.subtitle')} <span className="font-medium text-content">{email}</span>
         </p>
