@@ -401,6 +401,15 @@ def apply_to_job(
         company=job.company,
     )
 
+    # Алерт владельцу сервиса при 80% и 100% месячной квоты компании.
+    # Фоновый поток + best-effort: подачу заявки не задерживает и не ломает.
+    try:
+        from app.services.quota_alerts import check_candidate_quota_async
+
+        check_candidate_quota_async(job.company_id)
+    except Exception as _qa_e:
+        logger.warning("Не удалось запустить квота-алерт: %s", _qa_e)
+
     # AI предварительный скрининг резюме в фоне
     if candidate.resume_text:
         from fastapi import BackgroundTasks

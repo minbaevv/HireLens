@@ -27,6 +27,39 @@ function RichText({ text }) {
   )
 }
 
+// iPhone отдаёт снимки в HEIC и размером 3-5 МБ — такое фото не доезжало до сервера.
+// Пережимаем в браузере в JPEG до 1280px (~200 КБ). Если что-то пошло не так —
+// отправляем исходный файл, чтобы не ломать подачу заявки.
+function preparePhoto(file) {
+  return new Promise(resolve => {
+    try {
+      const url = URL.createObjectURL(file)
+      const img = new Image()
+      img.onload = () => {
+        try {
+          const max = 1280
+          const scale = Math.min(1, max / Math.max(img.width, img.height))
+          const canvas = document.createElement('canvas')
+          canvas.width = Math.round(img.width * scale)
+          canvas.height = Math.round(img.height * scale)
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+          canvas.toBlob(blob => {
+            URL.revokeObjectURL(url)
+            resolve(blob ? new File([blob], 'photo.jpg', { type: 'image/jpeg' }) : file)
+          }, 'image/jpeg', 0.85)
+        } catch (e) {
+          URL.revokeObjectURL(url)
+          resolve(file)
+        }
+      }
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(file) }
+      img.src = url
+    } catch (e) {
+      resolve(file)
+    }
+  })
+}
+
 export default function ApplyPage() {
   const { token } = useParams()
   const navigate = useNavigate()
@@ -63,7 +96,7 @@ export default function ApplyPage() {
       if (form.phone) fd.append('phone', form.phone)
       if (useFile && file) fd.append('resume_file', file)
       else if (form.resume_text) fd.append('resume_text', form.resume_text)
-      if (photo) fd.append('photo_file', photo)
+      if (photo) fd.append('photo_file', await preparePhoto(photo))
       const { data } = await axios.post(`/api/apply/${token}`, fd)
       const iv = await axios.post(`/api/interviews/${data.id}/start`)
       // SEC-1: токен доступа к интервью — без него бэкенд отклонит запросы
@@ -72,7 +105,11 @@ export default function ApplyPage() {
         state: { firstMessage: iv.data.message, secondsRemaining: iv.data.seconds_remaining, companyLogoUrl: job.company_logo_url, companyName: job.company_name }
       })
     } catch (err) {
-      setError(err.response?.data?.detail || t('apply.error'))
+      // 413 приходит от nginx HTML-страницей — detail в нём нет, нужен свой текст.
+      const detail = err.response?.data?.detail
+      if (typeof detail === 'string' && detail) setError(detail)
+      else if (err.response?.status === 413) setError(t('apply.tooLarge'))
+      else setError(t('apply.error'))
     } finally {
       setSubmitting(false)
     }
@@ -164,7 +201,7 @@ export default function ApplyPage() {
               <label className="flex items-center gap-3 w-full px-4 py-3 border-2 border-dashed border-line rounded-lg cursor-pointer hover:border-brand-400 hover:bg-brand-50 dark:hover:bg-brand-500/10 transition-colors">
                 <Upload className="w-5 h-5 text-faint shrink-0" />
                 <span className="text-sm text-muted truncate">{photo ? photo.name : t('apply.photoHint')}</span>
-                <input type="file" className="hidden" accept="image/png,image/jpeg,image/webp" onChange={e => setPhoto(e.target.files[0])} />
+                <input type="file" className="hidden" accept="image/*" onChange={e => setPhoto(e.target.files[0])} />
               </label>
             </div>
             {error && <div className="bg-red-50 border border-red-200 text-red-700 dark:bg-red-500/10 dark:border-red-500/30 dark:text-red-300 text-sm px-4 py-3 rounded-lg">{error}</div>}

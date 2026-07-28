@@ -24,6 +24,16 @@ const EXPORT_MIME = {
   pdf: 'application/pdf',
 }
 
+// Номер для wa.me: местный 0705... и номер без кода страны приводим к 996XXXXXXXXX,
+// иначе WhatsApp не находит контакт. Старые записи в базе хранятся без нормализации.
+function waPhone(phone) {
+  const d = String(phone || '').replace(/\D/g, '')
+  if (d.startsWith('996')) return d
+  if (d.startsWith('0')) return '996' + d.slice(1)
+  if (d.length === 9) return '996' + d
+  return d
+}
+
 export default function CandidatesPage() {
   const { t, lang } = useT()
   const navigate = useNavigate()
@@ -375,7 +385,7 @@ export default function CandidatesPage() {
                         <div>
                           <p className="text-sm font-medium text-content">{c.name}</p>
                           <p className="text-xs text-faint">{c.email}</p>
-                          {c.phone && <p className="text-xs text-faint">{c.phone}</p>}
+                          {c.phone && <p className="text-xs text-faint"><a href={`https://wa.me/${waPhone(c.phone)}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="hover:text-brand-600 hover:underline">{c.phone}</a></p>}
                           {Array.isArray(c.tags) && c.tags.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-1">
                               {c.tags.map(tg => (
@@ -425,7 +435,7 @@ export default function CandidatesPage() {
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-content truncate">{c.name}</p>
                     <p className="text-xs text-faint truncate">{c.email}</p>
-                    {c.phone && <p className="text-xs text-faint">{c.phone}</p>}
+                    {c.phone && <p className="text-xs text-faint"><a href={`https://wa.me/${waPhone(c.phone)}`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} className="hover:text-brand-600 hover:underline">{c.phone}</a></p>}
                   </div>
                   <StatusBadge status={c.status} />
                 </div>
