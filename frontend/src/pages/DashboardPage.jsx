@@ -112,7 +112,7 @@ export default function DashboardPage() {
   const statusTotal = pieData.reduce((sum, s) => sum + s.value, 0)
 
   const barData = data.top_jobs.map(j => ({
-    name: j.title.length > 24 ? j.title.slice(0, 24) + '…' : j.title,
+    name: j.title.length > 34 ? j.title.slice(0, 34) + '…' : j.title,
     fullName: j.title,
     candidates: j.total_candidates,
     hired: j.hired_count,
@@ -284,7 +284,7 @@ export default function DashboardPage() {
               <BarChart layout="vertical" data={barData} margin={{ top: 4, right: 16, left: 4, bottom: 4 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} horizontal={false} />
                 <XAxis type="number" tick={{ fontSize: 11, fill: chartTick }} allowDecimals={false} />
-                <YAxis type="category" dataKey="name" width={150} tick={{ fontSize: 11, fill: chartTick }} />
+                <YAxis type="category" dataKey="name" width={185} tick={{ fontSize: 11, fill: chartTick }} interval={0} />
                 <Tooltip content={<BarTooltip />} cursor={{ fill: isDark ? '#1e293b' : '#f1f5f9' }} />
                 <Bar dataKey="candidates" name={t('dashboard.seriesCandidates')} fill="#3b82f6" radius={[0,4,4,0]} />
                 <Bar dataKey="hired" name={t('dashboard.seriesHired')} fill="#10b981" radius={[0,4,4,0]} />
