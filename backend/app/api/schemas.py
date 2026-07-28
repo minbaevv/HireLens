@@ -6,6 +6,20 @@ from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator, mo
 from app.models.models import CandidateStatus
 
 
+def _sign_photo_url(value):
+    """SEC-3: превращает /api/candidates/photo/<file> в подписанную ссылку."""
+    if not value or "?" in value:
+        return value
+    try:
+        from app.core.security import sign_file_name
+
+        name = value.rsplit("/", 1)[-1]
+        exp, sig = sign_file_name(name)
+        return f"{value}?exp={exp}&sig={sig}"
+    except Exception:
+        return value
+
+
 class RegisterRequest(BaseModel):
     email: EmailStr
     password: str = Field(min_length=6)
@@ -134,6 +148,11 @@ class CandidateOut(BaseModel):
     phone: Optional[str] = None
     resume_text: Optional[str]
     photo_url: Optional[str] = None
+
+    @field_validator("photo_url", mode="after")
+    @classmethod
+    def _sign_photo(cls, v):
+        return _sign_photo_url(v)
     status: CandidateStatus
     score: Optional[float]
     pre_score: Optional[float]
@@ -217,6 +236,11 @@ class CandidateListItem(BaseModel):
     recommendation: Optional[str]
     requires_manual_review: bool = False
     photo_url: Optional[str] = None
+
+    @field_validator("photo_url", mode="after")
+    @classmethod
+    def _sign_photo(cls, v):
+        return _sign_photo_url(v)
     tags: list[str] = []
     created_at: datetime
 

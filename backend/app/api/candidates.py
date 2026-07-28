@@ -1097,12 +1097,19 @@ def get_candidate_transcript(
 
 
 @hr_router.get("/photo/{filename}", summary="Фото кандидата")
-def get_candidate_photo(filename: str):
-    """Публичная раздача фото кандидата (имя файла содержит случайный токен)."""
+def get_candidate_photo(filename: str, exp: Optional[int] = None, sig: Optional[str] = None):
+    """SEC-3: фото кандидата — персональные данные, раздаётся только
+    по подписанной ссылке с ограниченным сроком жизни (24 часа).
+    Подпись выдаёт API авторизованному HR вместе с карточкой кандидата."""
     from fastapi.responses import FileResponse
+
+    from app.core.security import verify_file_token
+
     safe = Path(filename).name
     if safe != filename:
         raise HTTPException(status_code=400, detail="Некорректное имя файла")
+    if not verify_file_token(safe, exp, sig):
+        raise HTTPException(status_code=403, detail="Ссылка на фото недействительна или устарела")
     path = PHOTO_DIR / safe
     if not path.is_file():
         raise HTTPException(status_code=404, detail="Фото не найдено")

@@ -1,4 +1,5 @@
 import hashlib
+import hmac
 import secrets
 from datetime import UTC, datetime, timedelta
 from typing import Optional
@@ -91,3 +92,34 @@ def generate_api_key() -> tuple[str, str, str]:
     full_key = f"{API_KEY_PREFIX}{secrets.token_urlsafe(32)}"
     prefix = full_key[:12]
     return full_key, prefix, hash_api_key(full_key)
+
+# SEC-3: подписанные ссылки на файлы с персональными данными (фото кандидатов).
+# <img> не умеет шлать заголовок Authorization, поэтому доступ даётся по временной
+# подписи в query-параметрах: API отдаёт уже подписанный URL авторизованному HR.
+FILE_TOKEN_TTL_SECONDS = 24 * 3600
+
+
+def _file_signature(name: str, exp: int) -> str:
+    msg = f"{name}:{exp}".encode("utf-8")
+    return hmac.new(
+        settings.JWT_SECRET.encode("utf-8"), msg, hashlib.sha256
+    ).hexdigest()[:32]
+
+
+def sign_file_name(name: str, ttl_seconds: int = FILE_TOKEN_TTL_SECONDS) -> tuple[int, str]:
+    """Возвращает (exp, sig) для имени файла."""
+    exp = int(datetime.now(UTC).timestamp()) + int(ttl_seconds)
+    return exp, _file_signature(name, exp)
+
+
+def verify_file_token(name: str, exp, sig) -> bool:
+    """Проверяет подпись и срок жизни ссылки на файл."""
+    if not sig or exp is None:
+        return False
+    try:
+        exp_int = int(exp)
+    except (TypeError, ValueError):
+        return False
+    if exp_int < int(datetime.now(UTC).timestamp()):
+        return False
+    return hmac.compare_digest(_file_signature(name, exp_int), str(sig))
