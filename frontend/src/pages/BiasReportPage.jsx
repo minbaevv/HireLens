@@ -74,7 +74,7 @@ export default function BiasReportPage() {
                 <div className="space-y-2">
                   {top.map(([reason, count]) => (
                     <div key={reason} className="flex items-center gap-3">
-                      <span className="text-xs text-muted w-40 shrink-0 truncate" title={reason}>{reason}</span>
+                      <span className="text-xs text-muted w-64 shrink-0 truncate" title={reason}>{reason}</span>
                       <div className="flex-1 h-2 rounded-full bg-surface-muted overflow-hidden">
                         <div className="h-full bg-red-400 dark:bg-red-500/60 rounded-full" style={{ width: `${max ? (count / max) * 100 : 0}%` }} />
                       </div>

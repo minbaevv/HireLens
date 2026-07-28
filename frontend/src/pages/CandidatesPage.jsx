@@ -37,8 +37,9 @@ function waPhone(phone) {
 // Аватар кандидата: фото, а если его нет — инициалы на фирменном фоне.
 // Раньше строки без фото оставались без аватара и список выглядел рваным.
 function Avatar({ name, src, size = 'w-9 h-9' }) {
-  if (src) {
-    return <img src={src} alt="" className={`${size} rounded-full object-cover border border-line shrink-0`} />
+  const [failed, setFailed] = useState(false)
+  if (src && !failed) {
+    return <img src={src} alt="" onError={() => setFailed(true)} className={`${size} rounded-full object-cover border border-line shrink-0`} />
   }
   const initials = String(name || '?').trim().split(/\s+/).slice(0, 2).map(w => w.charAt(0)).join('').toUpperCase()
   return (
