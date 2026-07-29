@@ -29,8 +29,13 @@ def _html_to_text(html: str) -> str:
     return text.strip()
 
 
-def _send_email(to: str, subject: str, html_body: str) -> bool:
-    """Отправляет email через SMTP. Возвращает True при успехе."""
+def _send_email(to: str, subject: str, html_body: str,
+                reply_to: str = "", from_name: str = "") -> bool:
+    """Отправляет email через SMTP. Возвращает True при успехе.
+
+    reply_to — адрес, на который уйдёт ответ получателя (email компании).
+    from_name — имя отправителя (название компании); домен остаётся нашим из-за SPF/DMARC.
+    """
     if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
         logger.warning("SMTP не настроен (SMTP_USER/SMTP_PASSWORD пустые)")
         return False
@@ -38,9 +43,13 @@ def _send_email(to: str, subject: str, html_body: str) -> bool:
     try:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
-        msg["From"] = f"HireLens <{settings.SMTP_FROM}>"
+        from email.utils import formataddr
+        sender_name = (from_name or "").strip()
+        display_name = f"{sender_name} (HireLens)" if sender_name else "HireLens"
+        msg["From"] = formataddr((display_name, settings.SMTP_FROM), charset="utf-8")
         msg["To"] = to
-        msg["Reply-To"] = settings.SMTP_FROM
+        # Ответ получателя должен идти HR компании, а не в общий ящик HireLens
+        msg["Reply-To"] = (reply_to or "").strip() or settings.SMTP_FROM
         msg["Message-ID"] = make_msgid(domain=settings.SMTP_FROM.split("@")[-1])
         msg["Date"] = formatdate(localtime=True)
         msg.attach(MIMEText(_html_to_text(html_body), "plain", "utf-8"))
@@ -130,7 +139,8 @@ def notify_interview_result(candidate_name: str, candidate_email: str,
 
 def notify_candidate_status(candidate_name: str, candidate_email: str,
                              job_title: str, new_status: str,
-                             language: str = "ru") -> bool:
+                             language: str = "ru",
+                             hr_email: str = "", company_name: str = "") -> bool:
     """Уведомляет кандидата об изменении статуса (текст — на языке вакансии)."""
     texts = CANDIDATE_STATUS_EMAIL.get(new_status)
     if not texts:
@@ -154,7 +164,8 @@ def notify_candidate_status(candidate_name: str, candidate_email: str,
         <p style="color: #9CA3AF; font-size: 12px; margin-top: 30px;">HireLens</p>
     </div>
     """
-    return _send_email(candidate_email, subject, html)
+    return _send_email(candidate_email, subject, html,
+                       reply_to=hr_email, from_name=company_name)
 
 
 
@@ -162,7 +173,8 @@ def notify_interview_invitation(candidate_name: str, candidate_email: str,
                                  job_title: str, date: str, time: str = "",
                                  location: str = "", note: str = "",
                                  company_name: str = "",
-                                 language: str = "ru") -> bool:
+                                 language: str = "ru",
+                                 hr_email: str = "") -> bool:
     """Приглашает кандидата на очное (живое) собеседование.
     Дату/время/адрес вводит HR — они подставляются в письмо."""
     lang = normalize_language(language)
@@ -223,7 +235,8 @@ def notify_interview_invitation(candidate_name: str, candidate_email: str,
         <p style="color: #9CA3AF; font-size: 12px; margin-top: 30px;">HireLens{sig}</p>
     </div>
     """
-    return _send_email(candidate_email, subject, html)
+    return _send_email(candidate_email, subject, html,
+                       reply_to=hr_email, from_name=company_name)
 
 
 def send_verification_code(to: str, code: str) -> bool:
