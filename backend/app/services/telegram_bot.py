@@ -2,7 +2,7 @@
 
 Флоу:
   /start <token>  — кандидат открывает ссылку вакансии
-  Бот спрашивает имя → email → резюме (необязательно)
+  Бот спрашивает имя → телефон → фото → email → резюме (необязательно)
   Затем начинается AI-интервью прямо в чате
 
 Язык диалога берётся из Job.language (ru/ky/en) — так же, как и язык
@@ -26,9 +26,14 @@ _sessions: dict = {}
 
 STATE_IDLE        = "idle"
 STATE_WAIT_NAME   = "wait_name"
+STATE_WAIT_PHONE  = "wait_phone"
+STATE_WAIT_PHOTO  = "wait_photo"
 STATE_WAIT_EMAIL  = "wait_email"
 STATE_WAIT_RESUME = "wait_resume"
 STATE_INTERVIEW   = "interview"
+
+# Фото кандидата из Telegram (pilot feedback: Dinara)
+MAX_TG_PHOTO_SIZE = 5 * 1024 * 1024  # 5 MB
 
 
 def _api(method: str, token: str = None, **kwargs) -> dict:
@@ -110,9 +115,29 @@ def handle_update(update: dict, db) -> None:
         send_message(chat_id, t("cancelled", lang))
         return
 
+    # Номер телефона кнопкой «Отправить мой номер»
+    contact = message.get("contact")
+    if contact:
+        if state == STATE_WAIT_PHONE:
+            _handle_phone(chat_id, contact.get("phone_number", ""), session)
+        return
+
+    # Фото кандидата
+    photos = message.get("photo")
+    if photos:
+        if state == STATE_WAIT_PHOTO:
+            _handle_photo(chat_id, photos, session, db)
+        else:
+            send_message(chat_id, t("photo_not_expected", _lang(session)))
+        return
+
     # --- Диалог по состоянию ---
     if state == STATE_WAIT_NAME:
         _handle_name(chat_id, text, session)
+    elif state == STATE_WAIT_PHONE:
+        _handle_phone(chat_id, text, session)
+    elif state == STATE_WAIT_PHOTO:
+        _handle_photo_text(chat_id, text, session)
     elif state == STATE_WAIT_EMAIL:
         _handle_email(chat_id, text, session)
     elif state == STATE_WAIT_RESUME:
@@ -158,8 +183,95 @@ def _handle_name(chat_id: int, text: str, session: dict) -> None:
         send_message(chat_id, t("name_too_short", lang))
         return
     session["data"]["name"] = text
+    session["state"] = STATE_WAIT_PHONE
+    send_message(
+        chat_id,
+        t("ask_phone", lang, name=text),
+        reply_markup={
+            "keyboard": [[{"text": t("btn_send_phone", lang), "request_contact": True}]],
+            "resize_keyboard": True,
+            "one_time_keyboard": True,
+        },
+    )
+
+
+def _normalize_phone(raw):
+    """Приводит телефон к формату +996XXXXXXXXX (как в веб-анкете)."""
+    import re
+    if not raw:
+        return None
+    s = str(raw).strip()
+    if not s:
+        return None
+    has_plus = s.startswith("+")
+    digits = re.sub(r"\D", "", s)
+    if not digits:
+        return None
+    if has_plus:
+        return "+" + digits
+    if digits.startswith("996"):
+        return "+" + digits
+    if digits.startswith("0"):
+        return "+996" + digits.lstrip("0")
+    if len(digits) == 9:
+        return "+996" + digits
+    return "+" + digits
+
+
+def _handle_phone(chat_id: int, raw: str, session: dict) -> None:
+    """Шаг «телефон»: кнопка контакта или ручной ввод."""
+    lang = _lang(session)
+    phone = _normalize_phone(raw)
+    if not phone or len(phone) < 10:
+        send_message(chat_id, t("invalid_phone", lang))
+        return
+    session["data"]["phone"] = phone
+    session["state"] = STATE_WAIT_PHOTO
+    send_message(
+        chat_id,
+        t("ask_photo", lang),
+        reply_markup={
+            "keyboard": [[{"text": t("btn_skip", lang)}]],
+            "resize_keyboard": True,
+            "one_time_keyboard": True,
+        },
+    )
+
+
+def _goto_email(chat_id: int, session: dict) -> None:
+    lang = _lang(session)
     session["state"] = STATE_WAIT_EMAIL
-    send_message(chat_id, t("ask_email", lang, name=text))
+    send_message(
+        chat_id,
+        t("ask_email", lang, name=session["data"].get("name", "")),
+        reply_markup={"remove_keyboard": True},
+    )
+
+
+def _handle_photo_text(chat_id: int, text: str, session: dict) -> None:
+    """Шаг «фото»: текст вместо картинки — только «пропустить»."""
+    lang = _lang(session)
+    if is_skip_word(text, lang):
+        _goto_email(chat_id, session)
+        return
+    send_message(chat_id, t("ask_photo_again", lang))
+
+
+def _handle_photo(chat_id: int, photos: list, session: dict, db) -> None:
+    """Скачивает самый крупный размер фото и кладёт в сессию."""
+    lang = _lang(session)
+    data = None
+    try:
+        file_id = photos[-1]["file_id"]
+        data = _download_telegram_file(file_id)
+    except Exception as e:
+        logger.warning(f"Photo download error: {e}")
+    if not data or data[:3] != b"\xff\xd8\xff" or len(data) > MAX_TG_PHOTO_SIZE:
+        send_message(chat_id, t("photo_error", lang))
+        return
+    session["data"]["photo_bytes"] = data
+    send_message(chat_id, t("photo_saved", lang))
+    _goto_email(chat_id, session)
 
 
 def _handle_email(chat_id: int, text: str, session: dict) -> None:
@@ -209,12 +321,29 @@ def _create_candidate_and_start_interview(chat_id: int, session: dict, db) -> No
         job_id=job_id,
         name=name,
         email=email,
+        phone=data.get("phone"),
         resume_text=resume_text,
         status=CandidateStatus.applied,
     )
     db.add(candidate)
     db.commit()
     db.refresh(candidate)
+
+    # Фото из Telegram — сохраняем туда же, куда его кладёт веб-анкета
+    photo_bytes = data.get("photo_bytes")
+    if photo_bytes:
+        try:
+            import secrets
+            from pathlib import Path
+            photo_dir = Path("uploads/photos")
+            photo_dir.mkdir(parents=True, exist_ok=True)
+            pfname = f"{candidate.id}_{secrets.token_hex(8)}.jpg"
+            (photo_dir / pfname).write_bytes(photo_bytes)
+            candidate.photo_url = f"/api/candidates/photo/{pfname}"
+            db.commit()
+            db.refresh(candidate)
+        except Exception as e:
+            logger.warning(f"Фото из Telegram не сохранено (#{candidate.id}): {e}")
 
     # Пре-скрининг резюме
     if resume_text:
