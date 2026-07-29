@@ -2,7 +2,7 @@
 
 Флоу:
   /start <token>  — кандидат открывает ссылку вакансии
-  Бот спрашивает имя → email → резюме (необязательно)
+  Бот спрашивает имя → телефон → фото → email → резюме (два последних — необязательно)
   Затем начинается AI-интервью прямо в чате
 
 Язык диалога берётся из Job.language (ru/ky/en) — так же, как и язык
@@ -28,9 +28,14 @@ _sessions: dict = {}
 
 STATE_IDLE        = "idle"
 STATE_WAIT_NAME   = "wait_name"
+STATE_WAIT_PHONE  = "wait_phone"
+STATE_WAIT_PHOTO  = "wait_photo"
 STATE_WAIT_EMAIL  = "wait_email"
 STATE_WAIT_RESUME = "wait_resume"
 STATE_INTERVIEW   = "interview"
+
+# Фото кандидата из Telegram — тот же лимит, что и в веб-анкете
+MAX_TG_PHOTO_SIZE = 5 * 1024 * 1024
 
 
 def _api(method: str, token: str = None, **kwargs) -> dict:
@@ -48,10 +53,10 @@ def _api(method: str, token: str = None, **kwargs) -> dict:
 
 
 def safe_html(text: str) -> str:
-    """Готовит произвольный текст (например, ответ модели) к отправке в HTML-режиме.
+    """Готовит произвольный текст (ответ модели, речь кандидата) к HTML-отправке.
 
     Telegram отбивает сообщение с 400, если в тексте есть < > & или незакрытые теги.
-    Поэтому сначала экранируем всё, потом аккуратно возвращаем жирный текст и код.
+    Поэтому сначала экранируем всё, потом возвращаем только жирный текст и код.
     """
     if not text:
         return ""
@@ -68,7 +73,7 @@ def send_message(chat_id: int, text: str, reply_markup=None, token: str = None) 
     result = _api("sendMessage", token=token, **payload)
     if result.get("ok"):
         return
-    # Разметка не разобралась — лучше доставить простым текстом, чем потерять сообщение
+    # Разметка не разобралась — лучше доставить простым текстом, чем потерять вопрос
     logger.warning(
         "TG sendMessage отклонён (%s), повтор без разметки",
         result.get("description", "нет ответа"),
@@ -138,9 +143,28 @@ def handle_update(update: dict, db) -> None:
         send_message(chat_id, t("cancelled", lang))
         return
 
+    # Номер телефона кнопкой "Отправить номер"
+    contact = message.get("contact")
+    if contact and state == STATE_WAIT_PHONE:
+        _handle_phone(chat_id, contact.get("phone_number", ""), session)
+        return
+
+    # Фото кандидата
+    photos = message.get("photo")
+    if photos:
+        if state == STATE_WAIT_PHOTO:
+            _handle_photo(chat_id, photos, session)
+        else:
+            send_message(chat_id, t("photo_not_expected", _lang(session)))
+        return
+
     # --- Диалог по состоянию ---
     if state == STATE_WAIT_NAME:
         _handle_name(chat_id, text, session)
+    elif state == STATE_WAIT_PHONE:
+        _handle_phone(chat_id, text, session)
+    elif state == STATE_WAIT_PHOTO:
+        _handle_photo_text(chat_id, text, session)
     elif state == STATE_WAIT_EMAIL:
         _handle_email(chat_id, text, session)
     elif state == STATE_WAIT_RESUME:
@@ -186,12 +210,98 @@ def _handle_name(chat_id: int, text: str, session: dict) -> None:
         send_message(chat_id, t("name_too_short", lang))
         return
     session["data"]["name"] = text
+    session["state"] = STATE_WAIT_PHONE
+    send_message(
+        chat_id,
+        t("ask_phone", lang, name=text),
+        reply_markup={
+            "keyboard": [[{"text": t("btn_send_phone", lang), "request_contact": True}]],
+            "resize_keyboard": True,
+            "one_time_keyboard": True,
+        },
+    )
+
+
+def _normalize_phone(raw: str):
+    """Приводит телефон к международному виду (KG по умолчанию: +996).
+
+    Логика та же, что в веб-анкете, иначе ссылка wa.me не открывает контакт.
+    """
+    if not raw:
+        return None
+    s = str(raw).strip()
+    if not s:
+        return None
+    has_plus = s.startswith("+")
+    digits = re.sub(r"\D", "", s)
+    if not digits:
+        return None
+    if has_plus or digits.startswith("996"):
+        return "+" + digits
+    if digits.startswith("0"):
+        return "+996" + digits.lstrip("0")
+    if len(digits) == 9:
+        return "+996" + digits
+    return "+" + digits
+
+
+def _handle_phone(chat_id: int, raw: str, session: dict) -> None:
+    lang = _lang(session)
+    phone = _normalize_phone(raw)
+    if not phone or len(re.sub(r"\D", "", phone)) < 9:
+        send_message(chat_id, t("invalid_phone", lang))
+        return
+    session["data"]["phone"] = phone
+    session["state"] = STATE_WAIT_PHOTO
+    send_message(
+        chat_id,
+        t("ask_photo", lang),
+        reply_markup={
+            "keyboard": [[{"text": t("btn_skip", lang)}]],
+            "resize_keyboard": True,
+            "one_time_keyboard": True,
+        },
+    )
+
+
+def _goto_email(chat_id: int, session: dict) -> None:
+    """Переход к email с уборкой клавиатуры."""
+    lang = _lang(session)
     session["state"] = STATE_WAIT_EMAIL
-    send_message(chat_id, t("ask_email", lang, name=text))
+    send_message(
+        chat_id,
+        t("ask_email", lang, name=session["data"].get("name", "")),
+        reply_markup={"remove_keyboard": True},
+    )
+
+
+def _handle_photo_text(chat_id: int, text: str, session: dict) -> None:
+    """На шаге фото пришёл текст: либо пропуск, либо просим фото снова."""
+    lang = _lang(session)
+    if is_skip_word(text, lang) or text.strip() == t("btn_skip", lang):
+        _goto_email(chat_id, session)
+        return
+    send_message(chat_id, t("ask_photo_again", lang))
+
+
+def _handle_photo(chat_id: int, photos: list, session: dict) -> None:
+    """Сохраняет самый крупный вариант фото в сессию до создания кандидата."""
+    lang = _lang(session)
+    try:
+        file_id = photos[-1]["file_id"]
+        data = _download_telegram_file(file_id)
+        if not data or len(data) > MAX_TG_PHOTO_SIZE or data[:3] != b"\xff\xd8\xff":
+            send_message(chat_id, t("photo_error", lang))
+            return
+        session["data"]["photo_bytes"] = data
+        send_message(chat_id, t("photo_saved", lang))
+        _goto_email(chat_id, session)
+    except Exception as e:
+        logger.warning(f"TG photo error: {e}")
+        send_message(chat_id, t("photo_error", lang))
 
 
 def _handle_email(chat_id: int, text: str, session: dict) -> None:
-    import re
     lang = _lang(session)
     if not re.match(r"[^@]+@[^@]+\.[^@]+", text):
         send_message(chat_id, t("invalid_email", lang))
@@ -237,12 +347,29 @@ def _create_candidate_and_start_interview(chat_id: int, session: dict, db) -> No
         job_id=job_id,
         name=name,
         email=email,
+        phone=data.get("phone"),
         resume_text=resume_text,
         status=CandidateStatus.applied,
     )
     db.add(candidate)
     db.commit()
     db.refresh(candidate)
+
+    # Фото из Telegram — после commit, так как в имени файла нужен id кандидата
+    photo_bytes = data.get("photo_bytes")
+    if photo_bytes:
+        try:
+            import secrets
+            from pathlib import Path
+
+            photo_dir = Path("uploads/photos")
+            photo_dir.mkdir(parents=True, exist_ok=True)
+            pfname = f"{candidate.id}_{secrets.token_hex(8)}.jpg"
+            (photo_dir / pfname).write_bytes(photo_bytes)
+            candidate.photo_url = f"/api/candidates/photo/{pfname}"
+            db.commit()
+        except Exception as e:
+            logger.warning(f"Не удалось сохранить фото кандидата из Telegram: {e}")
 
     # Пре-скрининг резюме
     if resume_text:
