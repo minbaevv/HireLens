@@ -410,7 +410,7 @@ def _interview_expired(interview) -> bool:
     return rem is not None and rem <= 0
 
 
-def _finalize_interview(interview, db, closing_text: str, background_tasks=None) -> dict:
+def _finalize_interview(interview, db, closing_text: str, background_tasks=None, notify: bool = True) -> dict:
     """Завершает интервью: закрывающее сообщение + скоринг."""
     from datetime import datetime, UTC
     ai_msg = Message(interview_id=interview.id, role=MessageRole.ai, content=closing_text)
@@ -419,20 +419,22 @@ def _finalize_interview(interview, db, closing_text: str, background_tasks=None)
     interview.finished_at = datetime.now(UTC)
     db.commit()
     if background_tasks is not None:
-        background_tasks.add_task(_run_scoring_task, interview.id)
+        background_tasks.add_task(_run_scoring_task, interview.id, notify)
     else:
-        _run_scoring(interview, db)
+        _run_scoring(interview, db, notify=notify)
     return {"interview_id": interview.id, "message": closing_text, "is_complete": True}
 
 
-def finish_interview(interview_id: int, db: Session, background_tasks=None) -> dict:
+def finish_interview(interview_id: int, db: Session, background_tasks=None, notify: bool = True) -> dict:
     """Принудительно завершает интервью (истёк лимит времени). Идемпотентно."""
     interview = db.query(Interview).filter(Interview.id == interview_id).first()
     if not interview:
         raise ValueError(f"Интервью #{interview_id} не найдено")
     if interview.status != InterviewStatus.in_progress:
         return {"interview_id": interview_id, "message": "", "is_complete": True}
-    return _finalize_interview(interview, db, INTERVIEW_TIMEOUT_MESSAGE, background_tasks)
+    return _finalize_interview(
+        interview, db, INTERVIEW_TIMEOUT_MESSAGE, background_tasks, notify=notify
+    )
 
 
 def send_message(
@@ -517,14 +519,14 @@ def send_message(
     return {"interview_id": interview_id, "message": clean_text, "is_complete": is_complete}
 
 
-def _run_scoring_task(interview_id: int) -> None:
+def _run_scoring_task(interview_id: int, notify: bool = True) -> None:
     """Background task: создаёт новую сессию БД и запускает скоринг."""
     from app.core.db import SessionLocal
     db = SessionLocal()
     try:
         interview = db.query(Interview).filter(Interview.id == interview_id).first()
         if interview:
-            _run_scoring(interview, db)
+            _run_scoring(interview, db, notify=notify)
     except Exception as e:
         logger.error(f"Background scoring error для интервью #{interview_id}: {e}")
         # Страховка: если скоринг упал ДО своего внутреннего except (напр. ошибка
@@ -597,7 +599,7 @@ def _run_parallel(tasks: dict) -> dict:
         return pool.submit(lambda: asyncio.run(_gather())).result()
 
 
-def _run_scoring(interview: Interview, db: Session) -> None:
+def _run_scoring(interview: Interview, db: Session, notify: bool = True) -> None:
     """Автоматический скоринг после завершения интервью."""
     candidate = interview.candidate
     job = candidate.job
@@ -905,7 +907,12 @@ def _run_scoring(interview: Interview, db: Session) -> None:
             except Exception as email_err:
                 logger.warning(f"Email уведомление не отправлено: {email_err}")
 
-        _run_parallel({"telegram": _notify_telegram, "email": _notify_email})
+        if notify:
+            _run_parallel({"telegram": _notify_telegram, "email": _notify_email})
+        else:
+            logger.info(
+                "Тихий режим: уведомления HR по кандидату #%s пропущены", _cand_id
+            )
 
         # D2 — webhooks: уведомляем внешние интеграции (best-effort, не блокируем).
         # Ленивый импорт — чтобы избежать циклических зависимостей.

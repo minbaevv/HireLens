@@ -14,6 +14,8 @@
     docker compose exec -T backend python -m app.scripts.close_abandoned_interviews
 
 Идемпотентно: интервью, которые идут нормально или уже завершены, не трогаются.
+Тихий режим: письма и Telegram-уведомления HR по автозакрытым интервью не отправляются —
+иначе HR получал бы пачку писем «Интервью завершено — 0/100» по брошенным анкетам.
 """
 
 from __future__ import annotations
@@ -71,7 +73,7 @@ def main() -> int:
         for interview in stale:
             interview_id = interview.id
             try:
-                finish_interview(interview_id, db)
+                finish_interview(interview_id, db, notify=False)
                 closed += 1
                 logger.info("Интервью #%s закрыто и отправлено на оценку", interview_id)
             except Exception as err:  # noqa: BLE001 — одно падение не должно рвать весь прогон
