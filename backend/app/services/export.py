@@ -162,7 +162,13 @@ def _register_cyrillic_font():
     return None  # шрифт не найден, используем Helvetica (без кириллицы)
 
 
-def generate_candidate_pdf(candidate, job_title: str, messages: list = None) -> bytes:
+def _pdf_escape(text: str) -> str:
+    """Экранирует текст: reportlab разбирает HTML-подобные теги в Paragraph."""
+    import html
+    return html.escape(text or "", quote=False)
+
+
+def generate_candidate_pdf(candidate, job_title: str, messages: list = None, comments: list = None) -> bytes:
     """Генерирует PDF отчёт по кандидату."""
     try:
         from reportlab.lib import colors
@@ -286,6 +292,20 @@ def generate_candidate_pdf(candidate, job_title: str, messages: list = None) -> 
         if len(candidate.resume_text) > 2000:
             resume_text += "..."
         story.append(Paragraph(resume_text.replace("\n", "<br/>"), normal_style))
+
+    # Комментарии HR
+    if comments:
+        story.append(Paragraph("Заметки команды", heading_style))
+        for note in comments:
+            when = _local_dt(note.created_at)
+            when_str = when.strftime("%d.%m.%Y %H:%M") if when else ""
+            author = _pdf_escape(getattr(note, "author_name", "") or "")
+            body = _pdf_escape(getattr(note, "text", "") or "").replace("\n", "<br/>")
+            story.append(Paragraph(
+                f'<font color="#6B7280"><b>{author}</b> - {when_str}</font><br/>{body}',
+                normal_style,
+            ))
+            story.append(Spacer(1, 0.2 * cm))
 
     # Транскрипт интервью
     if messages:

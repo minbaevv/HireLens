@@ -645,11 +645,22 @@ def export_candidate_pdf(
             .all()
         )
 
+    # Комментарии HR по кандидату (выводятся в отчёте)
+    from app.models.candidate_comment import CandidateComment
+
+    comments = (
+        db.query(CandidateComment)
+        .filter(CandidateComment.candidate_id == candidate_id)
+        .order_by(CandidateComment.created_at, CandidateComment.id)
+        .all()
+    )
+
     try:
         pdf_bytes = generate_candidate_pdf(
             candidate=candidate,
             job_title=candidate.job.title,
             messages=messages,
+            comments=comments,
         )
     except RuntimeError as e:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
@@ -753,12 +764,8 @@ def _owned_candidates(db: Session, company_id: int, ids: List[int]) -> List[Cand
     )
 
 
-def _send_status_emails_async(payloads: List[tuple], hr_email: str = "",
-                              company_name: str = "") -> None:
-    """Фоновая отправка писем о статусе (name, email, job_title, language, status).
-
-    hr_email — адрес компании для Reply-To: ответ кандидата должен идти HR.
-    """
+def _send_status_emails_async(payloads: List[tuple]) -> None:
+    """Фоновая отправка писем о статусе (name, email, job_title, language, status)."""
     if not payloads:
         return
 
@@ -772,8 +779,6 @@ def _send_status_emails_async(payloads: List[tuple], hr_email: str = "",
                     job_title=job_title,
                     new_status=status_value,
                     language=language,
-                    hr_email=hr_email,
-                    company_name=company_name,
                 )
             except Exception as e:
                 logger.warning(f"Массовое уведомление не отправлено ({email}): {e}")
@@ -832,11 +837,7 @@ def bulk_update_status(
             **actor_fields(actor),
         )
     if body.notify:
-        _send_status_emails_async(
-            email_payloads,
-            hr_email=(getattr(company, "email", "") or ""),
-            company_name=(getattr(company, "brand_name", None) or getattr(company, "name", "")),
-        )
+        _send_status_emails_async(email_payloads)
     total = len(set(body.candidate_ids))
     return BulkActionResponse(updated=updated, skipped=total - updated, total=total)
 
@@ -896,11 +897,7 @@ def bulk_notify(
         (c.name, c.email, c.job.title, getattr(c.job, "language", "ru"), c.status.value)
         for c in candidates
     ]
-    _send_status_emails_async(
-        payloads,
-        hr_email=(getattr(company, "email", "") or ""),
-        company_name=(getattr(company, "brand_name", None) or getattr(company, "name", "")),
-    )
+    _send_status_emails_async(payloads)
     if payloads:
         record_audit(
             db,
@@ -1192,7 +1189,6 @@ def invite_candidate(
             note=body.note,
             company_name=(getattr(current_company, "brand_name", None) or getattr(current_company, "name", "")),
             language=getattr(candidate.job, "language", "ru"),
-            hr_email=(getattr(current_company, "email", "") or ""),
         )
     except Exception as e:
         logger.warning(f"Email приглашение кандидату не отправлено: {e}")
@@ -1250,8 +1246,6 @@ def update_candidate_status(
                 job_title=candidate.job.title,
                 new_status=new_status.value,
                 language=getattr(candidate.job, "language", "ru"),
-                hr_email=(getattr(current_company, "email", "") or ""),
-                company_name=(getattr(current_company, "brand_name", None) or getattr(current_company, "name", "")),
             )
         except Exception as e:
             logger.warning(f"Email уведомление кандидату не отправлено: {e}")
