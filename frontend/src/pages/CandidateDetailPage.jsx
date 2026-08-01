@@ -32,6 +32,23 @@ function AnimatedScore({ score, label }) {
   )
 }
 
+// Нормализуем номер для ссылки WhatsApp: только цифры, код страны 996 по умолчанию.
+function waPhone(raw) {
+  let digits = String(raw || '').replace(/[^0-9]/g, '')
+  if (!digits) return ''
+  if (digits.slice(0, 2) === '00') digits = digits.slice(2)
+  digits = digits.replace(/^0+/, '')
+  if (digits.length === 9) digits = '996' + digits
+  return digits
+}
+
+function waLink(raw, text) {
+  const phone = waPhone(raw)
+  if (!phone) return ''
+  const base = 'https://' + 'wa.me/' + phone
+  return text ? base + '?text=' + encodeURIComponent(text) : base
+}
+
 export default function CandidateDetailPage() {
   const { canWrite } = useAuth()
   const { id } = useParams()
@@ -57,6 +74,7 @@ export default function CandidateDetailPage() {
   const [inviteLocation, setInviteLocation] = useState('')
   const [inviteNote, setInviteNote] = useState('')
   const [inviting, setInviting] = useState(false)
+  const [photoOpen, setPhotoOpen] = useState(false)
 
   async function load() {
     const { data } = await api.get(`/candidates/${id}`)
@@ -165,12 +183,27 @@ export default function CandidateDetailPage() {
 
       {candidate.photo_url && (
         <div className="flex items-center gap-4 mb-6">
-          <img src={candidate.photo_url} alt={candidate.name}
-            className="w-20 h-20 rounded-full object-cover border border-line" />
+          <button type="button" onClick={() => setPhotoOpen(true)}
+            title="Нажмите, чтобы увеличить"
+            className="shrink-0 rounded-full">
+            <img src={candidate.photo_url} alt={candidate.name}
+              className="w-20 h-20 rounded-full object-cover border border-line cursor-zoom-in hover:opacity-90 transition-opacity" />
+          </button>
           <div>
             <p className="text-lg font-semibold text-content">{candidate.name}</p>
             <p className="text-sm text-muted">{candidate.email}</p>
           </div>
+        </div>
+      )}
+
+      {photoOpen && candidate.photo_url && (
+        <div onClick={() => setPhotoOpen(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 cursor-zoom-out">
+          <button type="button" onClick={() => setPhotoOpen(false)}
+            className="absolute top-4 right-6 text-white/80 hover:text-white text-4xl leading-none">&times;</button>
+          <img src={candidate.photo_url} alt={candidate.name}
+            onClick={e => e.stopPropagation()}
+            className="max-h-[85vh] max-w-[90vw] rounded-xl object-contain shadow-2xl" />
         </div>
       )}
 
@@ -227,6 +260,12 @@ export default function CandidateDetailPage() {
               <button onClick={() => setInviteOpen(v => !v)} disabled={updating} className="btn-secondary">
                 <CalendarClock className="w-4 h-4" /> {t('candidateDetail.inviteBtn')}
               </button>
+              {candidate.phone && (
+                <a href={waLink(candidate.phone)} target="_blank" rel="noopener noreferrer"
+                  className="btn-secondary">
+                  <MessageSquare className="w-4 h-4" /> WhatsApp
+                </a>
+              )}
             </>
           )}
           <button onClick={downloadPdf} className="btn-secondary">
@@ -258,6 +297,20 @@ export default function CandidateDetailPage() {
               <button onClick={sendInvite} disabled={!inviteDate || !inviteLocation || inviting} className="btn-primary">
                 <CalendarClock className="w-4 h-4" /> {t('candidateDetail.inviteSend')}
               </button>
+              {candidate.phone && (
+                <a
+                  href={waLink(
+                    candidate.phone,
+                    'Здравствуйте, ' + candidate.name + '! Приглашаем вас на собеседование '
+                      + inviteDate + (inviteTime ? ' в ' + inviteTime : '')
+                      + '. Адрес: ' + inviteLocation + '.'
+                      + (inviteNote ? ' ' + inviteNote : '')
+                  )}
+                  target="_blank" rel="noopener noreferrer"
+                  className={`btn-secondary ${(!inviteDate || !inviteLocation) ? 'pointer-events-none opacity-50' : ''}`}>
+                  <MessageSquare className="w-4 h-4" /> В WhatsApp
+                </a>
+              )}
               <button onClick={() => setInviteOpen(false)} className="btn-secondary">
                 {t('candidateDetail.inviteCancel')}
               </button>
