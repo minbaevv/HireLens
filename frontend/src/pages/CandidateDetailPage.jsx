@@ -11,6 +11,7 @@ import { useAuth } from '../hooks/useAuth'
 import { ArrowLeft, CheckCircle, XCircle, FileText, Download, AlertTriangle, ClipboardCheck, RefreshCw, MessageSquare, CalendarClock } from 'lucide-react'
 import SchedulingCard from '../components/SchedulingCard'
 import CodingCard from '../components/CodingCard'
+import CandidateComments from '../components/CandidateComments'
 
 // Скор с count-up + анимированной полосой и scan-line акцентом (мотив апертуры лого).
 function AnimatedScore({ score, label }) {
@@ -449,6 +450,7 @@ export default function CandidateDetailPage() {
 
       {/* B4 — Планирование интервью (Google Calendar) */}
       <SchedulingCard candidateId={id} />
+      <CandidateComments candidateId={id} />
 
       {/* GAP-5 — Технический тест (coding-ассессмент) */}
       <CodingCard candidateId={id} />

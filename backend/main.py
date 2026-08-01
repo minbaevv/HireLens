@@ -13,6 +13,7 @@ from app.api.team import router as team_router
 from app.api.jobs import router as jobs_router
 from app.api.candidates import router as apply_router
 from app.api.candidates import hr_router as candidates_router
+from app.api.candidate_comments import router as candidate_comments_router
 from app.api.careers import router as careers_router
 from app.api.interviews import router as interviews_router
 from app.api.health import router as health_router
@@ -106,6 +107,7 @@ app.include_router(team_router)
 app.include_router(jobs_router)
 app.include_router(apply_router)
 app.include_router(candidates_router)
+app.include_router(candidate_comments_router)  # Комментарии HR к кандидату
 app.include_router(careers_router)  # Публичная careers-страница компании (исправлен 404 на /api/careers/{id})
 app.include_router(interviews_router)
 app.include_router(analytics_router)

@@ -4,6 +4,7 @@ from app.models.audit_log import AuditLog
 from app.models.api_key import ApiKey
 from app.models.coding import CodingChallenge, CodingSubmission
 from app.models.candidate import Candidate, CandidateStatus
+from app.models.candidate_comment import CandidateComment
 from app.models.company import Company
 from app.models.google_integration import GoogleCredential, ScheduledInterview
 from app.models.payment_receipt import PaymentReceipt
@@ -18,6 +19,7 @@ __all__ = [
     "CodingChallenge",
     "CodingSubmission",
     "Candidate",
+    "CandidateComment",
     "CandidateStatus",
     "Company",
     "GoogleCredential",
