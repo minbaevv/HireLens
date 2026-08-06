@@ -63,7 +63,7 @@ export default function Layout() {
           <Menu className="w-5 h-5" />
         </button>
         <div
-          className="w-7 h-7 bg-[#0b1e3f] rounded-lg flex items-center justify-center overflow-hidden"
+          className="w-7 h-7 bg-gradient-to-br from-brand-400 to-brand-600 rounded-lg flex items-center justify-center overflow-hidden"
           style={showCustomLogo && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(brand?.color || '') ? { backgroundColor: brand.color } : undefined}
         >
           {showCustomLogo
@@ -85,7 +85,7 @@ export default function Layout() {
           </button>
           <div className="flex items-center gap-3">
             <div
-              className="w-9 h-9 bg-[#0b1e3f] rounded-xl flex items-center justify-center overflow-hidden"
+              className="w-9 h-9 bg-gradient-to-br from-brand-400 to-brand-600 rounded-xl flex items-center justify-center overflow-hidden shadow-glow-accent"
               style={showCustomLogo && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(brand?.color || '') ? { backgroundColor: brand.color } : undefined}
             >
               {showCustomLogo
@@ -114,7 +114,7 @@ export default function Layout() {
               onClick={() => setSidebarOpen(false)}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive ? 'bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300' : 'text-muted hover:bg-surface-muted hover:text-content'
+                  isActive ? 'relative bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300 before:content-[\'\'] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-0.5 before:h-5 before:rounded-full before:bg-brand-500 before:shadow-[0_0_8px_rgba(99,102,241,0.7)]' : 'text-muted hover:bg-surface-muted hover:text-content'
                 }`
               }
             >

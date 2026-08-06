@@ -7,14 +7,14 @@
    rgb(var(--color-..) / <alpha-value>) из tailwind.config.js. */
 @layer base {
   :root {
-    --color-canvas: 249 250 251;        /* gray-50  */
+    --color-canvas: 247 248 250;        /* #F7F8FA — светлый Linear */
     --color-surface: 255 255 255;       /* white    */
     --color-surface-muted: 243 244 246; /* gray-100 */
-    --color-line: 229 231 235;          /* gray-200 */
+    --color-line: 231 233 239;          /* #E7E9EF */
     --color-content: 17 24 39;          /* gray-900 */
     --color-muted: 107 114 128;         /* gray-500 */
     --color-faint: 156 163 175;         /* gray-400 */
-    --color-accent-glow: 59 130 246;    /* brand-500 */
+    --color-accent-glow: 99 102 241;    /* brand-500 (индиго) */
     /* Уровни возвышения: e1 — карточка, e2 — hover, e3 — модалка. */
     --shadow-e1: 0 1px 2px 0 rgb(15 23 42 / 0.05), 0 1px 3px 0 rgb(15 23 42 / 0.06);
     --shadow-e2: 0 4px 12px -2px rgb(15 23 42 / 0.10), 0 2px 6px -2px rgb(15 23 42 / 0.06);
@@ -22,14 +22,14 @@
   }
 
   .dark {
-    --color-canvas: 2 6 23;             /* slate-950 */
-    --color-surface: 15 23 42;          /* slate-900 */
-    --color-surface-muted: 30 41 59;    /* slate-800 */
-    --color-line: 51 65 85;             /* slate-700 */
-    --color-content: 241 245 249;       /* slate-100 */
-    --color-muted: 148 163 184;         /* slate-400 */
-    --color-faint: 100 116 139;         /* slate-500 */
-    --color-accent-glow: 56 189 248;    /* sky-400 */
+    --color-canvas: 10 11 16;           /* #0A0B10 — тёмный Linear */
+    --color-surface: 18 19 27;          /* #12131B */
+    --color-surface-muted: 26 28 38;    /* #1A1C26 */
+    --color-line: 36 38 50;             /* #242632 */
+    --color-content: 231 233 238;       /* #E7E9EE */
+    --color-muted: 138 143 158;         /* #8A8F9E */
+    --color-faint: 86 91 106;           /* #565B6A */
+    --color-accent-glow: 129 140 248;   /* brand-400 (индиго) */
     --shadow-e1: 0 1px 2px 0 rgb(0 0 0 / 0.40);
     --shadow-e2: 0 4px 14px -2px rgb(0 0 0 / 0.50);
     --shadow-e3: 0 20px 45px -12px rgb(0 0 0 / 0.65);
@@ -42,7 +42,7 @@
     text-rendering: optimizeLegibility;
   }
 
-  /* Все заголовки — акцидентным Manrope с плотным трекингом.
+  /* Все заголовки — Inter с плотным трекингом (стиль Linear).
      Задаётся один раз здесь — поэтому единообразно на всех страницах. */
   h1, h2, h3, h4 {
     @apply font-display tracking-[-0.015em];
@@ -61,14 +61,14 @@
   }
 
   input[type='checkbox'], input[type='radio'] {
-    accent-color: #2563eb;
+    accent-color: #4f46e5;
     width: 1rem;
     height: 1rem;
     cursor: pointer;
   }
 
   ::selection {
-    background-color: rgb(37 99 235 / 0.22);
+    background-color: rgb(99 102 241 / 0.22);
   }
 
   * {
@@ -110,34 +110,43 @@
   }
   /* Третичная кнопка без фона */
   .btn-ghost {
-    @apply inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl text-muted hover:bg-surface-muted hover:text-content transition-colors;
+    @apply inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg text-muted hover:bg-surface-muted hover:text-content transition-colors;
   }
   .btn-primary {
-    @apply inline-flex items-center gap-2 px-4 py-2.5 bg-brand-600 text-white text-sm font-semibold rounded-xl shadow-sm active:scale-[0.98] hover:bg-brand-700 active:bg-brand-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas;
+    @apply inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-br from-brand-500 to-brand-600 text-white text-sm font-semibold rounded-lg shadow-sm active:scale-[0.98] transition-all duration-fast hover:-translate-y-px hover:shadow-glow-accent disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas;
   }
   .btn-secondary {
-    @apply inline-flex items-center gap-2 px-4 py-2.5 bg-surface text-content text-sm font-semibold rounded-xl active:scale-[0.98] border border-line hover:bg-surface-muted active:bg-surface-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas;
+    @apply inline-flex items-center gap-2 px-4 py-2.5 bg-surface text-content text-sm font-semibold rounded-lg active:scale-[0.98] border border-line hover:bg-surface-muted active:bg-surface-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas;
   }
   .btn-danger {
-    @apply inline-flex items-center gap-2 px-4 py-2.5 bg-red-600 text-white text-sm font-semibold rounded-xl shadow-sm active:scale-[0.98] hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas;
+    @apply inline-flex items-center gap-2 px-4 py-2.5 bg-red-600 text-white text-sm font-semibold rounded-lg shadow-sm active:scale-[0.98] hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 focus-visible:ring-offset-canvas;
   }
   .input {
-    @apply w-full px-3.5 py-2.5 text-sm border border-line rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-shadow bg-surface text-content placeholder:text-faint;
+    @apply w-full px-3.5 py-2.5 text-sm border border-line rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-shadow bg-surface text-content placeholder:text-faint;
   }
   .card {
-    @apply bg-surface rounded-2xl border border-line shadow-e1;
+    @apply bg-surface rounded-xl border border-line shadow-e1;
   }
   .badge-hire {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300;
+    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300;
   }
   .badge-maybe {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-500/15 dark:text-yellow-300;
+    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-500/15 dark:text-yellow-300;
   }
   .badge-reject {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300;
+    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300;
   }
   .badge-status {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  /* Точка-индикатор в бейджах рекомендаций (стиль A) */
+  .badge-hire::before, .badge-maybe::before, .badge-reject::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 9999px;
+    background: currentColor;
+    flex-shrink: 0;
   }
 
   /* Карточка с hover-подъёмом — для фич, тарифов, метрик */
@@ -147,7 +156,7 @@
 
   /* Мягкое свечение за героем/CTA */
   .glow-brand {
-    background: radial-gradient(ellipse 60% 50% at 50% 40%, rgb(59 130 246 / 0.14), transparent 70%);
+    background: radial-gradient(ellipse 60% 50% at 50% 40%, rgb(99 102 241 / 0.14), transparent 70%);
   }
 
   /* ─── Aurora animated background (фирменный анимированный фон) ────────── */
@@ -171,7 +180,7 @@
     left: -5%;
     width: 42vw;
     height: 42vw;
-    background: radial-gradient(circle, rgb(59 130 246 / 0.35), transparent 70%);
+    background: radial-gradient(circle, rgb(99 102 241 / 0.24), transparent 70%);
     animation: aurora-drift-a 22s ease-in-out infinite;
   }
   .aurora-blob-b {
@@ -179,7 +188,7 @@
     right: -10%;
     width: 38vw;
     height: 38vw;
-    background: radial-gradient(circle, rgb(34 211 238 / 0.30), transparent 70%);
+    background: radial-gradient(circle, rgb(129 140 248 / 0.16), transparent 70%);
     animation: aurora-drift-b 26s ease-in-out infinite;
   }
   .aurora-blob-c {
@@ -187,13 +196,13 @@
     left: 20%;
     width: 46vw;
     height: 46vw;
-    background: radial-gradient(circle, rgb(139 92 246 / 0.25), transparent 70%);
+    background: radial-gradient(circle, rgb(79 70 229 / 0.15), transparent 70%);
     animation: aurora-drift-c 30s ease-in-out infinite;
   }
 
-  .dark .aurora-blob-a { background: radial-gradient(circle, rgb(59 130 246 / 0.18), transparent 70%); }
-  .dark .aurora-blob-b { background: radial-gradient(circle, rgb(34 211 238 / 0.16), transparent 70%); }
-  .dark .aurora-blob-c { background: radial-gradient(circle, rgb(139 92 246 / 0.16), transparent 70%); }
+  .dark .aurora-blob-a { background: radial-gradient(circle, rgb(99 102 241 / 0.15), transparent 70%); }
+  .dark .aurora-blob-b { background: radial-gradient(circle, rgb(129 140 248 / 0.10), transparent 70%); }
+  .dark .aurora-blob-c { background: radial-gradient(circle, rgb(79 70 229 / 0.11), transparent 70%); }
 
   /* Более сдержанная версия для внутренних экранов приложения (не мешает работе) */
   .aurora-blob-subtle { opacity: 0.55; }
