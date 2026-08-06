@@ -2,7 +2,7 @@
 
 Числа СИНХРОНИЗИРОВАНЫ с маркетингом на лендинге (app/api/landing.py):
     Free:    1 активная вакансия,    5 кандидатов/месяц
-    Starter: 3 активные вакансии,  50 кандидатов/месяц
+    Starter: 3 активные вакансии, 100 кандидатов/месяц
     Pro:     безлимит вакансий,   300 кандидатов/месяц
 
 `None` означает «без лимита». Месяц считается по календарю (UTC), с 1-го числа.
@@ -26,7 +26,7 @@ DEFAULT_PLAN = "free"
 # max_active_jobs / max_candidates_per_month; None = безлимит
 PLAN_LIMITS: dict[str, dict[str, Optional[int]]] = {
     "free":    {"max_active_jobs": 1,    "max_candidates_per_month": 5},
-    "starter": {"max_active_jobs": 3,    "max_candidates_per_month": 50},
+    "starter": {"max_active_jobs": 3,    "max_candidates_per_month": 100},
     "pro":     {"max_active_jobs": None, "max_candidates_per_month": 300},
 }
 

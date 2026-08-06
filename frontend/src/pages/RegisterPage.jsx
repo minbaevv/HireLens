@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import api from '../api/client'
 import { Bot, Eye, EyeOff } from 'lucide-react'
@@ -15,13 +15,15 @@ export default function RegisterPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPass, setShowPass] = useState(false)
+  const [searchParams] = useSearchParams()
+  const refCode = searchParams.get('ref') || ''
 
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
     setLoading(true)
     try {
-      await api.post('/auth/register', form)
+      await api.post('/auth/register', { ...form, referral_code: refCode || null })
       navigate(`/verify-email?email=${encodeURIComponent(form.email)}`)
     } catch (err) {
       setError(err.response?.data?.detail || t('register.errorDefault'))
@@ -44,6 +46,11 @@ export default function RegisterPage() {
           <h1 className="page-title">{t('register.title')}</h1>
           <p className="page-subtitle">{t('register.subtitle')}</p>
         </div>
+        {refCode && (
+          <div className="mb-4 text-center text-sm text-green-700 bg-green-50 border border-green-200 dark:bg-green-500/10 dark:border-green-500/30 dark:text-green-300 px-4 py-2.5 rounded-lg">
+            {t('register.referralApplied')}
+          </div>
+        )}
         <div className="card p-8 backdrop-blur-xl bg-surface/90">
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>

@@ -161,7 +161,7 @@ _CONTENT: dict = {
             {"name": "Free", "price": "0", "period": "forever",
              "features": ["5 candidates/month", "1 job", "AI interviews", "Email notifications"]},
             {"name": "Starter", "price": "4900", "period": "month", "highlighted": True,
-             "features": ["50 candidates/month", "3 jobs", "Voice interviews", "Telegram bot", "CSV export"]},
+             "features": ["100 candidates/month", "3 jobs", "Voice interviews", "Telegram bot", "CSV export"]},
             {"name": "Pro", "price": "12900", "period": "month",
              "features": ["300 candidates/month", "Then 45 KGS per candidate", "Unlimited jobs", "PDF reports", "Analytics dashboard", "Priority support"]},
         ],

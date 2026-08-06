@@ -149,6 +149,40 @@ def register(request: Request, body: RegisterRequest, db: Session = Depends(get_
     return RegisterResponse(email=body.email)
 
 
+# D3: бонус пригласившему — столько дней Starter за каждую компанию,
+# подтвердившую email по реферальной ссылке.
+REFERRAL_REWARD_DAYS = 30
+
+
+def _grant_referral_reward(db: Session, referred: Company) -> None:
+    """Начисляет пригласившей компании Starter на REFERRAL_REWARD_DAYS дней.
+
+    Вызывается при подтверждении email приглашённой компании (срабатывает один раз).
+    Pro и бессрочный Starter (выданный вручную) не трогаем, активный Starter продлеваем.
+    """
+    referrer_id = getattr(referred, "referred_by_company_id", None)
+    if not referrer_id:
+        return
+    referrer = db.query(Company).filter(Company.id == referrer_id).first()
+    if referrer is None:
+        return
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    current_plan = (referrer.plan or "free").lower()
+    if current_plan == "pro":
+        return
+    if current_plan == "starter" and referrer.plan_expires_at is None:
+        return
+    base = now
+    if current_plan == "starter" and referrer.plan_expires_at and referrer.plan_expires_at > now:
+        base = referrer.plan_expires_at
+    referrer.plan = "starter"
+    referrer.plan_expires_at = base + timedelta(days=REFERRAL_REWARD_DAYS)
+    logger.info(
+        f"Referral reward: company #{referrer.id} +{REFERRAL_REWARD_DAYS} дн. Starter "
+        f"(приглашена компания #{referred.id})"
+    )
+
+
 @router.post("/verify-email", response_model=TokenResponse)
 @limiter.limit("20/hour")
 def verify_email(request: Request, body: VerifyEmailRequest, db: Session = Depends(get_db)):
@@ -180,6 +214,7 @@ def verify_email(request: Request, body: VerifyEmailRequest, db: Session = Depen
         logger.info(
             f"Trial granted: {company.email} -> {settings.TRIAL_PLAN} на {settings.TRIAL_DAYS} дн."
         )
+    _grant_referral_reward(db, company)
     db.commit()
     logger.info(f"Email verified: {company.email}")
     return TokenResponse(

@@ -13,15 +13,13 @@ from app.api.team import router as team_router
 from app.api.jobs import router as jobs_router
 from app.api.candidates import router as apply_router
 from app.api.candidates import hr_router as candidates_router
-from app.api.candidate_comments import router as candidate_comments_router
 from app.api.careers import router as careers_router
 from app.api.interviews import router as interviews_router
 from app.api.health import router as health_router
 from app.api.analytics import router as analytics_router
 from app.api.landing import router as landing_router
 from app.api.seo import router as seo_router
-# Реферальная программа временно отключена (вернём позже). Роутер и модель сохранены.
-# from app.api.referral import router as referral_router
+from app.api.referral import router as referral_router
 from app.api.billing import router as billing_router
 from app.api.admin import router as admin_router
 from app.api.telegram_webhook import router as telegram_router
@@ -107,13 +105,12 @@ app.include_router(team_router)
 app.include_router(jobs_router)
 app.include_router(apply_router)
 app.include_router(candidates_router)
-app.include_router(candidate_comments_router)  # Комментарии HR к кандидату
 app.include_router(careers_router)  # Публичная careers-страница компании (исправлен 404 на /api/careers/{id})
 app.include_router(interviews_router)
 app.include_router(analytics_router)
 app.include_router(landing_router)
 app.include_router(seo_router)
-# app.include_router(referral_router)  # рефералы временно отключены
+app.include_router(referral_router)
 app.include_router(billing_router)
 app.include_router(admin_router)
 app.include_router(telegram_router)

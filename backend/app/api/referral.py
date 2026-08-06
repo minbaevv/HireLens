@@ -3,6 +3,9 @@
 Каждая компания получает уникальный реферальный код и ссылку. Когда по ссылке
 (?ref=CODE → передаётся в /auth/register) регистрируется новая компания,
 она привязывается к пригласившему. Эндпоинт отдаёт код, ссылку и статистику.
+
+Награда: когда приглашённая компания подтверждает email, пригласивший получает
+тариф Starter на 30 дней (начисление — в auth.verify_email).
 """
 import secrets
 
@@ -63,7 +66,10 @@ def get_my_referral(
     code = ensure_referral_code(db, company)
     referred_count = (
         db.query(func.count(Company.id))
-        .filter(Company.referred_by_company_id == company.id)
+        .filter(
+            Company.referred_by_company_id == company.id,
+            Company.is_verified == True,  # noqa: E712  (бонус — только за подтвердивших email)
+        )
         .scalar()
         or 0
     )
