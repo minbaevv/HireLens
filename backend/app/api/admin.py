@@ -220,6 +220,24 @@ def review_receipt(
     r.note = body.note
     r.reviewed_by = admin.email
     r.reviewed_at = datetime.now(timezone.utc).replace(tzinfo=None)
+    # Реферальная награда: первая одобренная оплата приглашённой компании —
+    # пригласивший получает Starter (начисление — в auth._grant_referral_reward).
+    # Повторные чеки и продления новой награды не дают (проверка prior_approved).
+    if body.status == "approved":
+        referred_company = db.query(Company).filter(Company.id == r.company_id).first()
+        if referred_company is not None and getattr(referred_company, "referred_by_company_id", None):
+            prior_approved = (
+                db.query(PaymentReceipt.id)
+                .filter(
+                    PaymentReceipt.company_id == r.company_id,
+                    PaymentReceipt.status == "approved",
+                    PaymentReceipt.id != r.id,
+                )
+                .first()
+            )
+            if prior_approved is None:
+                from app.api.auth import _grant_referral_reward
+                _grant_referral_reward(db, referred_company)
     db.commit()
     db.refresh(r)
     record_audit(

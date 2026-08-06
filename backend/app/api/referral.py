@@ -4,8 +4,8 @@
 (?ref=CODE → передаётся в /auth/register) регистрируется новая компания,
 она привязывается к пригласившему. Эндпоинт отдаёт код, ссылку и статистику.
 
-Награда: когда приглашённая компания подтверждает email, пригласивший получает
-тариф Starter на 30 дней (начисление — в auth.verify_email).
+Награда: когда приглашённая компания совершает первую оплату (чек одобрен в
+/admin), пригласивший получает тариф Starter на 30 дней (admin.review_receipt).
 """
 import secrets
 
@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_company
 from app.core.config import settings
 from app.core.db import get_db
-from app.models.models import Company
+from app.models.models import Company, PaymentReceipt
 
 router = APIRouter(prefix="/referral", tags=["referral"])
 
@@ -68,7 +68,18 @@ def get_my_referral(
         db.query(func.count(Company.id))
         .filter(
             Company.referred_by_company_id == company.id,
-            Company.is_verified == True,  # noqa: E712  (бонус — только за подтвердивших email)
+            Company.is_verified == True,  # noqa: E712  (в статистике — только подтвердившие email)
+        )
+        .scalar()
+        or 0
+    )
+    # Месяцы награды = число приглашённых компаний с одобренной оплатой (чек в /admin).
+    paid_count = (
+        db.query(func.count(func.distinct(PaymentReceipt.company_id)))
+        .join(Company, Company.id == PaymentReceipt.company_id)
+        .filter(
+            Company.referred_by_company_id == company.id,
+            PaymentReceipt.status == "approved",
         )
         .scalar()
         or 0
@@ -78,5 +89,5 @@ def get_my_referral(
         code=code,
         share_url=f"{base}/register?ref={code}",
         referred_count=referred_count,
-        reward_months=referred_count * REWARD_MONTHS_PER_REFERRAL,
+        reward_months=paid_count * REWARD_MONTHS_PER_REFERRAL,
     )

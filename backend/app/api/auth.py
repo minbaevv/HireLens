@@ -149,15 +149,15 @@ def register(request: Request, body: RegisterRequest, db: Session = Depends(get_
     return RegisterResponse(email=body.email)
 
 
-# D3: бонус пригласившему — столько дней Starter за каждую компанию,
-# подтвердившую email по реферальной ссылке.
+# D3: бонус пригласившему — столько дней Starter за каждую приглашённую
+# компанию, совершившую первую оплату (начисление — в admin.review_receipt).
 REFERRAL_REWARD_DAYS = 30
 
 
 def _grant_referral_reward(db: Session, referred: Company) -> None:
     """Начисляет пригласившей компании Starter на REFERRAL_REWARD_DAYS дней.
 
-    Вызывается при подтверждении email приглашённой компании (срабатывает один раз).
+    Вызывается при первой одобренной оплате приглашённой компании (admin.review_receipt).
     Pro и бессрочный Starter (выданный вручную) не трогаем, активный Starter продлеваем.
     """
     referrer_id = getattr(referred, "referred_by_company_id", None)
@@ -214,7 +214,6 @@ def verify_email(request: Request, body: VerifyEmailRequest, db: Session = Depen
         logger.info(
             f"Trial granted: {company.email} -> {settings.TRIAL_PLAN} на {settings.TRIAL_DAYS} дн."
         )
-    _grant_referral_reward(db, company)
     db.commit()
     logger.info(f"Email verified: {company.email}")
     return TokenResponse(
