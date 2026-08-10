@@ -27,7 +27,6 @@ import AuditLogPage from './pages/AuditLogPage'
 import CareersPage from './pages/CareersPage'
 import BrandingPage from './pages/BrandingPage'
 import PrivacyPage from './pages/PrivacyPage'
-import ReferralPage from './pages/ReferralPage'
 import Layout from './components/Layout'
 
 function PrivateRoute({ children }) {
@@ -35,13 +34,19 @@ function PrivateRoute({ children }) {
   return token ? children : <Navigate to="/landing" replace />
 }
 
+// Публичные страницы для НЕзалогиненных: при живой сессии сразу в кабинет.
+function PublicOnlyRoute({ children }) {
+  const { token } = useAuth()
+  return token ? <Navigate to="/" replace /> : children
+}
+
 export default function App() {
   return (
     <LanguageProvider>
     <Routes>
-      <Route path="/landing" element={<LandingPage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/landing" element={<PublicOnlyRoute><LandingPage /></PublicOnlyRoute>} />
+      <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
+      <Route path="/register" element={<PublicOnlyRoute><RegisterPage /></PublicOnlyRoute>} />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
       <Route path="/apply/:token" element={<ApplyPage />} />
       <Route path="/team/accept" element={<AcceptInvitePage />} />
@@ -66,7 +71,6 @@ export default function App() {
         <Route path="coding" element={<CodingPage />} />
         <Route path="governance" element={<BiasReportPage />} />
         <Route path="billing" element={<BillingPage />} />
-        <Route path="referral" element={<ReferralPage />} />
         <Route path="admin" element={<AdminPage />} />
         <Route path="audit" element={<AuditLogPage />} />
         <Route path="branding" element={<BrandingPage />} />

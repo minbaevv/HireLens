@@ -26,7 +26,7 @@ from app.core.security import (
 )
 from app.models.models import Company
 from app.models.team_member import TeamMember
-from app.services.email import notify_registration_attempt, send_verification_code
+from app.services.email import notify_registration_attempt, send_password_reset_code, send_verification_code
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -40,6 +40,7 @@ class RegisterRequest(BaseModel):
 
 
 VERIFICATION_CODE_TTL_MINUTES = 15
+RESET_CODE_TTL_MINUTES = 15
 
 
 class RegisterResponse(BaseModel):
@@ -54,6 +55,16 @@ class VerifyEmailRequest(BaseModel):
 
 class ResendCodeRequest(BaseModel):
     email: EmailStr
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    code: str
+    new_password: str
 
 
 class TokenResponse(BaseModel):
@@ -238,6 +249,62 @@ def resend_code(request: Request, body: ResendCodeRequest, db: Session = Depends
     return RegisterResponse(
         message="Если аккаунт существует и не подтверждён — код отправлен повторно",
         email=body.email,
+    )
+
+
+@router.post("/forgot-password", response_model=RegisterResponse)
+@limiter.limit("5/hour")
+def forgot_password(request: Request, body: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    """Запрос кода сброса пароля. Ответ нейтрален независимо от email (SEC-11)."""
+    company = db.query(Company).filter(Company.email == body.email).first()
+    if company is not None and company.is_verified:
+        code = f"{secrets.randbelow(1000000):06d}"
+        company.reset_code = code
+        company.reset_code_expires_at = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(
+            minutes=RESET_CODE_TTL_MINUTES
+        )
+        db.commit()
+        send_password_reset_code(company.email, code)
+        logger.info(f"Password reset code sent: {body.email}")
+    else:
+        logger.info(f"Password reset for unknown/unverified email: {body.email}")
+    return RegisterResponse(
+        message="Если такой email зарегистрирован — мы отправили код для сброса пароля",
+        email=body.email,
+    )
+
+
+@router.post("/reset-password", response_model=TokenResponse)
+@limiter.limit("20/hour")
+def reset_password(request: Request, body: ResetPasswordRequest, db: Session = Depends(get_db)):
+    """Сброс пароля по 6-значному коду из письма. При успехе сразу логиним (как verify-email)."""
+    company = db.query(Company).filter(Company.email == body.email).first()
+    invalid = HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Неверный код")
+    if company is None or not company.reset_code:
+        raise invalid
+    if (
+        company.reset_code_expires_at
+        and datetime.now(timezone.utc).replace(tzinfo=None) > company.reset_code_expires_at
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Код истёк, запросите новый",
+        )
+    if not secrets.compare_digest(company.reset_code, body.code.strip()):
+        raise invalid
+    try:
+        validate_password_strength(body.new_password)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e))
+
+    company.hashed_password = get_password_hash(body.new_password)
+    company.reset_code = None
+    company.reset_code_expires_at = None
+    db.commit()
+    logger.info(f"Password reset done: {company.email}")
+    return TokenResponse(
+        access_token=create_access_token({"sub": str(company.id), "actor_type": "company"}),
+        refresh_token=create_refresh_token({"sub": str(company.id), "actor_type": "company"}),
     )
 
 

@@ -29,13 +29,8 @@ def _html_to_text(html: str) -> str:
     return text.strip()
 
 
-def _send_email(to: str, subject: str, html_body: str,
-                reply_to: str = "", from_name: str = "") -> bool:
-    """Отправляет email через SMTP. Возвращает True при успехе.
-
-    reply_to — адрес, на который уйдёт ответ получателя (email компании).
-    from_name — имя отправителя (название компании); домен остаётся нашим из-за SPF/DMARC.
-    """
+def _send_email(to: str, subject: str, html_body: str) -> bool:
+    """Отправляет email через SMTP. Возвращает True при успехе."""
     if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
         logger.warning("SMTP не настроен (SMTP_USER/SMTP_PASSWORD пустые)")
         return False
@@ -43,13 +38,9 @@ def _send_email(to: str, subject: str, html_body: str,
     try:
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
-        from email.utils import formataddr
-        sender_name = (from_name or "").strip()
-        display_name = f"{sender_name} (HireLens)" if sender_name else "HireLens"
-        msg["From"] = formataddr((display_name, settings.SMTP_FROM), charset="utf-8")
+        msg["From"] = f"HireLens <{settings.SMTP_FROM}>"
         msg["To"] = to
-        # Ответ получателя должен идти HR компании, а не в общий ящик HireLens
-        msg["Reply-To"] = (reply_to or "").strip() or settings.SMTP_FROM
+        msg["Reply-To"] = settings.SMTP_FROM
         msg["Message-ID"] = make_msgid(domain=settings.SMTP_FROM.split("@")[-1])
         msg["Date"] = formatdate(localtime=True)
         msg.attach(MIMEText(_html_to_text(html_body), "plain", "utf-8"))
@@ -139,8 +130,7 @@ def notify_interview_result(candidate_name: str, candidate_email: str,
 
 def notify_candidate_status(candidate_name: str, candidate_email: str,
                              job_title: str, new_status: str,
-                             language: str = "ru",
-                             hr_email: str = "", company_name: str = "") -> bool:
+                             language: str = "ru") -> bool:
     """Уведомляет кандидата об изменении статуса (текст — на языке вакансии)."""
     texts = CANDIDATE_STATUS_EMAIL.get(new_status)
     if not texts:
@@ -164,8 +154,7 @@ def notify_candidate_status(candidate_name: str, candidate_email: str,
         <p style="color: #9CA3AF; font-size: 12px; margin-top: 30px;">HireLens</p>
     </div>
     """
-    return _send_email(candidate_email, subject, html,
-                       reply_to=hr_email, from_name=company_name)
+    return _send_email(candidate_email, subject, html)
 
 
 
@@ -173,8 +162,7 @@ def notify_interview_invitation(candidate_name: str, candidate_email: str,
                                  job_title: str, date: str, time: str = "",
                                  location: str = "", note: str = "",
                                  company_name: str = "",
-                                 language: str = "ru",
-                                 hr_email: str = "") -> bool:
+                                 language: str = "ru") -> bool:
     """Приглашает кандидата на очное (живое) собеседование.
     Дату/время/адрес вводит HR — они подставляются в письмо."""
     lang = normalize_language(language)
@@ -235,8 +223,7 @@ def notify_interview_invitation(candidate_name: str, candidate_email: str,
         <p style="color: #9CA3AF; font-size: 12px; margin-top: 30px;">HireLens{sig}</p>
     </div>
     """
-    return _send_email(candidate_email, subject, html,
-                       reply_to=hr_email, from_name=company_name)
+    return _send_email(candidate_email, subject, html)
 
 
 def send_verification_code(to: str, code: str) -> bool:
@@ -263,6 +250,28 @@ def send_verification_code(to: str, code: str) -> bool:
         # DEV-удобство: SMTP не настроен — выводим код в лог, чтобы можно было завершить регистрацию.
         logger.warning(f"[DEV] Код подтверждения для {to}: {code} (SMTP не настроен)")
     return sent
+
+
+def send_password_reset_code(to: str, code: str) -> bool:
+    """Отправляет 6-значный код сброса пароля (SEC-11)."""
+    subject = "Сброс пароля — HireLens"
+    html = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #374151;">
+        <h2 style="color: #4F46E5;">Сброс пароля</h2>
+        <p>Здравствуйте!</p>
+        <p>Мы получили запрос на сброс пароля от вашего аккаунта <strong>HireLens</strong>. Введите этот код на странице восстановления:</p>
+        <p style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #4F46E5; margin: 24px 0;">{code}</p>
+        <p>Код действует <strong>15 минут</strong>. После сброса вы сразу войдёте в личный кабинет с новым паролем.</p>
+        <p style="color: #6B7280;">Если вы не запрашивали сброс пароля — просто проигнорируйте это письмо. Ваш пароль останется прежним.</p>
+        <hr style="border: none; border-top: 1px solid #E5E7EB; margin: 24px 0;">
+        <p style="color: #9CA3AF; font-size: 12px; line-height: 1.6;">
+            HireLens — автоматизация найма с помощью искусственного интеллекта.<br>
+            Это письмо отправлено автоматически, отвечать на него не нужно.<br>
+            Сайт: https://gethirelens.tech
+        </p>
+    </div>
+    """
+    return _send_email(to, subject, html)
 
 
 def notify_registration_attempt(to: str) -> bool:

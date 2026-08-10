@@ -9,7 +9,10 @@ export function useAuth() {
     if (token) {
       api.get('/auth/me')
         .then(r => setCompany(r.data))
-        .catch(() => logout())
+        // Разлогиниваем только при 401 (сессия мертва). Сетевые ошибки и
+
+        // перезапуск бэкенда сессию не трогают — иначе любой деплой выкидывает пользователей.
+        .catch(err => { if (err.response?.status === 401) logout() })
     }
   }, [token])
 

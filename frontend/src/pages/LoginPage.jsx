@@ -71,6 +71,9 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
+            <div className="text-right -mt-2">
+              <Link to="/forgot-password" className="text-sm text-brand-600 hover:underline">{t('login.forgotPassword')}</Link>
+            </div>
             {error && <div className="bg-red-50 border border-red-200 text-red-700 dark:bg-red-500/10 dark:border-red-500/30 dark:text-red-300 text-sm px-4 py-3 rounded-lg">{error}</div>}
             <button type="submit" className="btn-primary w-full justify-center py-2.5" disabled={loading}>
               {loading ? t('login.loading') : t('login.submit')}

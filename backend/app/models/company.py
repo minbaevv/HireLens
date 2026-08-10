@@ -22,6 +22,9 @@ class Company(Base):
     is_verified = Column(Boolean, default=False, nullable=False)
     verification_code = Column(String(6), nullable=True)
     verification_code_expires_at = Column(DateTime, nullable=True)
+    # Коды сброса пароля (forgot/reset password)
+    reset_code = Column(String(6), nullable=True)
+    reset_code_expires_at = Column(DateTime, nullable=True)
 
     # Telegram HR-уведомления, привязанные к компании (мультитенантность)
     telegram_chat_id = Column(String(64), nullable=True)
